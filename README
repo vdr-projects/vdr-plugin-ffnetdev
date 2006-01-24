@@ -1,0 +1,95 @@
+This is a "plugin" for the Video Disk Recorder (VDR).
+
+Written by:                  Christian Cier-Zniewski <c.cier@gmx.de>
+			     Jurij Retzlaff <jurij@topofweb.de>
+some code taken from:        Sascha Volkenandt's streamdev plugin <sascha@akv-soft.de>,
+			     TightVNC <http://www.tightvnc.com>
+			     
+
+Project's homepage:          https://developer.berlios.de/projects/ffnetdev/
+
+See the file COPYING for license information.
+
+!!! WARNING !!! 
+The code of this plugin is alpha quality. So expect it to have all kinds of bugs.
+If it crashes your machine, do not blame me. You have been warned!!! :-)
+!!! WARNING !!!
+
+------------
+Description:
+------------
+
+The purpose of this plugin is to provide an "easy" way of connecting possible streaming clients 
+to VDR by emulating a full featured DVB device over the network including OSD and TS streaming capabilities.
+
+The FFnetDev Plugin creates two listening TCP ports:
+1) a VNC server on default port 20001 that exports the OSD and accepts remote control keys from the keyboard(or whatever the VNC client uses).
+2) a TS streaming server on default port 20002 that streams the MPEG2 data instead of decoding and rendering it.
+   The streaming server registers as a "normal" Full Featured DVB device in VDR. Therefore offering playback capabilites including playback of
+   recordings and "transfer mode".
+
+Both built-in servers work independent from each other.
+So you can just use the plugin for viewing the OSD on a remote machine for example.
+
+--------
+Details:
+--------
+
+OSD (and text2skin)
+-------------------
+The OSD is transfered using the VNC protocol (aka VNC). See rfbproto.h for details.
+Features supported:
+-currently supported encodings: RAW, RRE, Hextile, CoRRE (CoRRE have a bug)
+-colour-map and truecolor
+-depths in truecolor mode: 8-bit, 16-bit and 32-bit
+
+You can also use the text2skin plugin to get a nice skinned OSD. 
+BUT BE AWARE that the code supports ONE BIG AREA only(method CanHandleAreas).
+This limitation is due to the fact that the built-in VNC server also supports palette based (a.k.a. colour map) framebuffer via VNC. 
+So if you want to use the text2skin plugin you have to change the desired skin to only use ONE 
+<window> tag with the greatest bounding rectangle the skin wants to draw in. bpp should be set to 8 bits.
+This is NOT going to change in future versions of the ffnetdev plugin.
+
+TS streaming
+------------
+The PES packets are multiplexed into a TS by the plugins own very simple PES2TS remux code.
+No PAT/PMT insertion is currently being done.
+The two TS PIDs for Audio and Video PIDs have fixed values. So changing a channel does not result in a change
+of the TS PIDs. (Video-PID: 99, Audio-PID: 100 [decimal])
+
+Existing clients
+----------------
+-Dreambox 5620S (simple native client, it is NOT an enigma plugin!, supports OSD via VNC and TS-Streaming)
+-Tuxbox VDRViewer(simple native client, it is NOT an enigma plugin!, supports OSD via VNC and TS-Streaming) 
+-Any VNC client using RFB protocol version 3.3 or 3.5 (TightVNC, RealVNC, etc.) should work
+
+Command line options
+--------------------
+
+  -t PORT, --tsport PORT      port number for sending TS to.
+  -o PORT, --osdport PORT     listen on this port for OSD connect.
+  -e	   		      enable remote control over OSD connection. 
+  
+Option "-e" registers a new remote control object causing VDR to start the learning procedure for this new remote control if you start
+VDR and the ffnetdev plugin for the first time. If you want to control VDR over SVDRP you can simply leave out the "-e" option.
+
+--------------
+Prerequisites:
+--------------
+This plugin only works for VDR versions >=1.3.18.
+It is currently being developed with VDR version 1.3.28.
+
+Installation:
+-------------
+
+Install ffnetdev like any other plugin. In this example I assume that you have
+changed to the folder where the VDR sourcecode is located, and that it is 
+version 0.0.3 of the plugin you wish to install. 
+
+root@linux # cd PLUGINS/src
+root@linux # wget http://nano.gmxhome.de/ffnetdev/vdr-ffnetdev-0.0.4.tar.bz2
+root@linux # tar xfj vdr-ffnetdev-0.0.4.tar.bz2
+root@linux # cd ../..
+root@linux # make plugins
+root@linux # ./vdr -P ffnetdev
+

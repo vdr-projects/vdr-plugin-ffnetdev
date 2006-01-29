@@ -63,7 +63,6 @@ private:
 	int 		OSDPort;
 	int 		state;
 	bool 		UseAlpha;
-	bool 		FirstUpdateRequest;
 	int 		numOSDColors;
 	rfbPixelFormat  ClientFormat;
 	rfbPixelFormat  ServerFormat;

@@ -68,6 +68,8 @@ cPluginFFNetDev::~cPluginFFNetDev()
 {
   cOSDWorker::Exit();
   cTSWorker::Exit();
+  
+  delete m_Remote;
 }
 
 const char *cPluginFFNetDev::CommandLineHelp(void)
@@ -180,7 +182,11 @@ bool cPluginFFNetDev::SetupParse(const char *Name, const char *Value)
 }
 
 void cPluginFFNetDev::SetPrimaryDevice()
-{
+{	
+    int i = 0;
+    while ((cOsd::IsOpen() > 0) && (i-- > 0))
+	cRemote::Put(kBack);
+	
     if ((config.iAutoSetPrimaryDVB == 1) && (m_origPrimaryDevice == -1))
     {
         cDevice *PrimaryDevice;
@@ -202,8 +208,11 @@ void cPluginFFNetDev::SetPrimaryDevice()
     
     if(EnableRemote) 
     {
-	m_Remote = new cMyRemote("ffnetdev");
-	new cLearningThread();
+	if (m_Remote == NULL)
+	    m_Remote = new cMyRemote("ffnetdev");
+	    
+	if (!cRemote::HasKeys())
+	    new cLearningThread();
 #ifdef DEBUG
 	fprintf(stderr, "[ffnetdev] remote control enabled.\n");
 #endif
@@ -215,20 +224,20 @@ void cPluginFFNetDev::SetPrimaryDevice()
 	fprintf(stderr, "[ffnetdev] remote control disabled.\n");
 #endif
 	isyslog("[ffnetdev] remote control disabled.\n");
-	delete m_Remote;
-	m_Remote = NULL;
     }
 }
 
 
 void cPluginFFNetDev::RestorePrimaryDevice()
 {
+    int i = 10;
+    while ((cOsd::IsOpen() > 0) && (i-- > 0))
+	cRemote::Put(kBack);
+
 #ifdef DEBUG
     fprintf(stderr, "[ffnetdev] remote control disabled.\n");
 #endif
     isyslog("[ffnetdev] remote control disabled.\n");
-    delete m_Remote;
-    m_Remote = NULL;
     
     if (m_origPrimaryDevice != -1)
     {

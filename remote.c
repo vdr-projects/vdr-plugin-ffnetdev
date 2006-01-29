@@ -45,14 +45,24 @@ cLearningThread::~cLearningThread(void)
 
 void cLearningThread::Action(void)
 {
-    while (!cOSDWorker::ClientIsReady())
-	usleep(100000);
+    int i = 10;
+    while ((!cOSDWorker::ClientIsReady()) && (i-- > 0))
+	sleep(1);
 	
-    while (cOsd::IsOpen() > 0)
-	usleep(100000);
+    i = 10;
+    while ((cOsd::IsOpen() > 0) && (i-- > 0))
+	cRemote::Put(kBack);
 
-    sleep(5);
+    if (!cOSDWorker::ClientIsReady() || (cOsd::IsOpen() > 0))
+    {	
+	dsyslog("[ffnetdev] ClientIsReady=%d OsdIsOpen=%d SkinsIsOpen=%d", 
+	    cOSDWorker::ClientIsReady(), cOsd::IsOpen(), Skins.IsOpen());
+	delete this;
+	return;
+    }
+
     dsyslog("[ffnetdev] start learning keys");
     Interface->LearnKeys();
+    
     delete this;
 }

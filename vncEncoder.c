@@ -36,7 +36,7 @@
 // Pixel format used internally when the client is palette-based & server is truecolour
 
 static const rfbPixelFormat BGR233Format = {
-    8, 8, 0, 1, 7, 7, 3, 0, 3, 6
+    8, 8, 0, 1, 7, 7, 3, 0, 3, 6, 0, 0
 };
 
 // The base (RAW) encoder class

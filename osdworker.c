@@ -31,7 +31,6 @@ cOSDWorker::cOSDWorker(void)
 	m_pSendBuffer 		= NULL;
 	m_SendBufferSize	= 0;
 	state 			= NO_CLIENT;
-	close_OSDclient_request = false;
 	
 	UseAlpha 		= false;
 	
@@ -50,7 +49,7 @@ cOSDWorker::cOSDWorker(void)
 	
 	memset(&m_OSDBuffer, 0, sizeof(m_OSDBuffer));
 	
-	numOSDColors		= 0;
+	numOSDColors		= 1;
 	memset(&OSDColors, 0, sizeof(OSDColors));
 	
 	m_notupdatedLeft   = -1;
@@ -59,6 +58,9 @@ cOSDWorker::cOSDWorker(void)
 	m_notupdatedBottom = -1;
 	memset(&m_lasttime, 0, sizeof(m_lasttime));
 	memset(&m_lastupdate, 0, sizeof(m_lastupdate));
+	
+	memset(&ClientFormat, 0, sizeof(ClientFormat));
+	ClientFormat.trueColour = 1;
 }
 
 cOSDWorker::~cOSDWorker() {
@@ -106,10 +108,29 @@ void cOSDWorker::CloseOSDClient(void) {
 	if (m_Instance == NULL)
 	    return;
 	    
-	m_Instance->close_OSDclient_request = true;
+	m_Instance->state = NO_CLIENT;
+	m_Instance->UseAlpha = false;
+	
+	delete m_Instance->m_pEncoder;
+	m_Instance->m_pEncoder = NULL;
+	
+	m_Instance->m_pPlugin->RestorePrimaryDevice();
+	
+	if (m_Instance->m_OSDClient != NULL) {
+	    if ( m_Instance->m_OSDClient->Close() ) {
 #ifdef DEBUG
-	fprintf(stderr, "[ffnetdev] VNC: Closing of OSD client socket requested.\r\n");
+		fprintf(stderr, "[ffnetdev] VNC: Client socket closed successfully.\n");
+#endif	
+	        isyslog("[ffnetdev] VNC: Connection closed.");
+	    }
+	    else {
+#ifdef DEBUG
+		fprintf(stderr, "[ffnetdev] VNC: Error closing client socket.\n");
 #endif
+		esyslog("[ffnetdev] VNC: Error closing connection.");
+		m_Instance->m_Active=false;
+	    }
+	}
 }
 
 bool cOSDWorker::SendPlayMode(ePlayMode PlayMode) {
@@ -140,14 +161,15 @@ bool cOSDWorker::ClearScreen(void)
 	
 	// this should be improved;
 	// 1) maybe we should send a our very "special" pseudo encoding[CLEAR_SCREEN] to our "special" VNC client to get an empty screen really fast
+
+	m_Instance->numOSDColors = 1;
+	memset(&m_Instance->OSDColors, 0, sizeof(m_Instance->OSDColors));
+	SendCMAP(m_Instance->numOSDColors, m_Instance->OSDColors);
+		
 	bool bRetVal = false;
 	memset(&(m_Instance->m_OSDBuffer), 0, 720*576); 
 	memset(&(m_Instance->m_lasttime), 0, sizeof(m_Instance->m_lasttime));
 	bRetVal = SendScreen(720,0,0,720,576,&(m_Instance->m_OSDBuffer));
-	
-	rfbBellMsg fu;
-	fu.type=rfbBell;
-	OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
 	
 	return bRetVal;
 }
@@ -217,6 +239,13 @@ bool cOSDWorker::SendScreen(unsigned int stride, unsigned int x1, unsigned int y
 #endif
 	dsyslog("[ffnetdev] VNC: Send OSD Data %d Bytes\n", BufferSize);
        	OSDWrite((unsigned char*)m_Instance->m_pSendBuffer, BufferSize);
+	
+	if ((m_Instance->numOSDColors == 0) || ((m_Instance->numOSDColors == 1) && (m_Instance->OSDColors[0] == 0)))
+	{
+	    rfbBellMsg fu;
+	    fu.type=rfbBell;
+	    OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
+	}
 
    	return true;
    }
@@ -240,6 +269,7 @@ bool cOSDWorker::SendCMAP(int NumColors, const tColor *Colors)
        	int i;
 	
 	if ((m_Instance->state==HANDSHAKE_OK) && !(m_Instance->ClientFormat.trueColour)) { 
+		dsyslog("[ffnetdev] VNC: SendColourMapEntries");
 		scme.type=rfbSetColourMapEntries;
 		scme.firstColour = Swap16IfLE(0);
 		scme.nColours = Swap16IfLE((CARD16)NumColors);
@@ -311,6 +341,7 @@ bool cOSDWorker::RFBRead(char *buffer, int len)
 	    return false;
 	    
 	if ( m_OSDClient->Read(buffer, len)==0 ) {
+	/*
 #ifdef DEBUG
 			fprintf(stderr, "[ffnetdev] VNC: Client closed connection.\n");
 #endif
@@ -320,7 +351,9 @@ bool cOSDWorker::RFBRead(char *buffer, int len)
 			m_Instance->m_OSDClient->Close();
 			delete m_pEncoder;
 			m_pEncoder = NULL;
-			
+	*/
+			CloseOSDClient();
+	
 			return false;
 	} 
 	else
@@ -478,17 +511,18 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 								Swap16IfLE(msg.fur.w),
 								Swap16IfLE(msg.fur.h)
 							);
-						if (FirstUpdateRequest) {
-							ClearScreen();
-							FirstUpdateRequest = false;
-						}
-						else
+							
+						if (numOSDColors > 0)
 						{
 						    SendCMAP(numOSDColors, OSDColors);
 						    SendScreen(720, //stride
 							Swap16IfLE(msg.fur.x), Swap16IfLE(msg.fur.y),
-							Swap16IfLE(msg.fur.w), Swap16IfLE(msg.fur.h),
+						        Swap16IfLE(msg.fur.w), Swap16IfLE(msg.fur.h),
 						  	&m_OSDBuffer);
+						}
+						else
+						{
+						    ClearScreen();
 						}
 						break;
 		case rfbKeyEvent:		if (!RFBRead( ((char*)&msg.ke)+1, sz_rfbKeyEventMsg-1))
@@ -595,7 +629,7 @@ void cOSDWorker::Action(void) {
 							}
 							else
 							{
-//							    m_pPlugin->SetPrimaryDevice();
+							    m_pPlugin->SetPrimaryDevice();
 							}
 							break;					
 							
@@ -696,37 +730,10 @@ void cOSDWorker::Action(void) {
 						}
 					 	
 						state = HANDSHAKE_OK;
-						FirstUpdateRequest = true;
 						break;
 
 			case HANDSHAKE_OK:	
 						
-						/* Check for closed OSD connection */
-						if (close_OSDclient_request==true) {
-							close_OSDclient_request = false;
-							state = NO_CLIENT;
-							UseAlpha = false;
-							
-							delete m_pEncoder;
-							m_pEncoder = NULL;
-							
-							m_pPlugin->RestorePrimaryDevice();
-							
-							if ( m_OSDClient->Close() ) {
-#ifdef DEBUG
-								fprintf(stderr, "[ffnetdev] VNC: Client socket closed successfully.\n");
-#endif				
-								isyslog("[ffnetdev] VNC: Connection closed.");
-							}
-							else {
-#ifdef DEBUG
-					   			fprintf(stderr, "[ffnetdev] VNC: Error closing client socket.\n");
-#endif
-					   			esyslog("[ffnetdev] VNC: Error closing connection.");
-					   			m_Active=false;
-					   			continue;
-							} 
-						}
 						HandleClientRequests(&select);
 
 						break;		

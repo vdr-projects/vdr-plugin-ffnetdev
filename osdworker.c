@@ -431,14 +431,14 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 								case rfbEncodingCoRRE: 		
 									if (m_pEncoder == NULL)
 									{
-									    isyslog("[ffnetdev] VNC: ->CoRRE encoding(not supported).\n");
+									    isyslog("[ffnetdev] VNC: ->CoRRE encoding(hav a bug).\n");
 									    m_pEncoder = new vncEncodeCoRRE();
 									}
 									break;
 								case rfbEncodingHextile:	
 									if (m_pEncoder == NULL)
 									{
-									    isyslog("[ffnetdev] VNC: ->Hextile encoding(not supported).\n");
+									    isyslog("[ffnetdev] VNC: ->Hextile encoding.\n");
 									    m_pEncoder = new vncEncodeHexT();
 									}
 									break;

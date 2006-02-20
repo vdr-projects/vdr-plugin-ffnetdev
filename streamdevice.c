@@ -114,7 +114,8 @@ bool cStreamDevice::Poll(cPoller &Poller, int TimeoutMs)
  */
 int cStreamDevice::PlayAudio(const uchar *Data, int Length)
 {
-   if (cTSWorker::HaveStreamClient()) {
+   if (cTSWorker::HaveStreamClient()) 
+   {
        while ((m_Remux->Free() < Length) && cTSWorker::HaveStreamClient())
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
@@ -132,8 +133,8 @@ int cStreamDevice::PlayAudio(const uchar *Data, int Length)
    else
    {
       m_Remux->ClearInput();
-      usleep(100000);
-      return ( 0 );
+//      usleep(10000);
+      return ( Length );
    }
   
 }
@@ -142,7 +143,9 @@ int cStreamDevice::PlayAudio(const uchar *Data, int Length)
  */
 int cStreamDevice::PlayVideo(const uchar *Data, int Length)
 {
-   if (cTSWorker::HaveStreamClient()) {
+   if (cTSWorker::HaveStreamClient()) 
+   {
+
        while ((m_Remux->Free() < Length) && cTSWorker::HaveStreamClient())
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
@@ -160,7 +163,7 @@ int cStreamDevice::PlayVideo(const uchar *Data, int Length)
    else
    {
       m_Remux->ClearInput();
-      usleep(100000);
-      return ( 0 );
+//      usleep(10000);
+      return ( Length );
    }
 }

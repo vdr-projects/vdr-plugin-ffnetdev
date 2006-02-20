@@ -23,3 +23,13 @@ Changelog
     - fixed PES2TS remuxer: PES packets shorter than TS payload size(184 bytes) did not have the PUSI
       (payload unit start indicator) flag set
     - reworked PES2TS remuxer code and added a mutex to synchronize input ringbuffer access
+
+  2006-02-19: ffnetdev-0.1.0
+    - optimize for DBOX2-Plugin VDR-Viewer https://developer.berlios.de/projects/vdrviewer/
+    - add VNC compression (RRE, Hextile)
+    - start learning remote if accept client, no more if start plugin
+    - added auto change primary DVB feature (enable/deisable in plugin settings)
+    - fixed several bugs
+
+  2006-02-20: ffnetdev-0.1.1
+    - fixed buffer overflow bug

@@ -112,7 +112,7 @@ bool cStreamDevice::Poll(cPoller &Poller, int TimeoutMs)
 }
 /* ----------------------------------------------------------------------------
  */
-int cStreamDevice::PlayAudio(const uchar *Data, int Length)
+int cStreamDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
 {
    if (cTSWorker::HaveStreamClient()) 
    {

@@ -93,3 +93,34 @@ root@linux # cd ../..
 root@linux # make plugins
 root@linux # ./vdr -P ffnetdev
 
+
+remote.conf for DBOX2 remote
+----------------------------
+ffnetdev.Up         0000000000000067
+ffnetdev.Down       000000000000006C
+ffnetdev.Menu       000000000000008D
+ffnetdev.Ok         0000000000000160
+ffnetdev.Back       0000000000000066
+ffnetdev.Left       0000000000000069
+ffnetdev.Right      000000000000006A
+ffnetdev.Red        000000000000018E
+ffnetdev.Green      000000000000018F
+ffnetdev.Yellow     0000000000000190
+ffnetdev.Blue       0000000000000191
+ffnetdev.0          000000000000000B
+ffnetdev.1          0000000000000002
+ffnetdev.2          0000000000000003
+ffnetdev.3          0000000000000004
+ffnetdev.4          0000000000000005
+ffnetdev.5          0000000000000006
+ffnetdev.6          0000000000000007
+ffnetdev.7          0000000000000008
+ffnetdev.8          0000000000000009
+ffnetdev.9          000000000000000A
+ffnetdev.Power      0000000000000074
+ffnetdev.Channel+   0000000000000073
+ffnetdev.Channel-   0000000000000072
+ffnetdev.Schedule   000000000000008A
+ffnetdev.Channels   0000000000000071
+
+

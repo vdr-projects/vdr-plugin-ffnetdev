@@ -87,8 +87,8 @@ changed to the folder where the VDR sourcecode is located, and that it is
 version 0.0.3 of the plugin you wish to install. 
 
 root@linux # cd PLUGINS/src
-root@linux # wget http://nano.gmxhome.de/ffnetdev/vdr-ffnetdev-0.0.4.tar.bz2
-root@linux # tar xfj vdr-ffnetdev-0.0.4.tar.bz2
+root@linux # wget http://nano.gmxhome.de/ffnetdev/vdr-ffnetdev-0.1.0.tar.bz2
+root@linux # tar xfj vdr-ffnetdev-0.1.0.tar.bz2
 root@linux # cd ../..
 root@linux # make plugins
 root@linux # ./vdr -P ffnetdev

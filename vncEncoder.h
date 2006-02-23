@@ -35,7 +35,6 @@ class vncEncoder;
 
 #if !defined(RFBENCODER_DEFINED)
 #define RFBENCODER_DEFINED
-#pragma once
 
 
 typedef unsigned char  BYTE;

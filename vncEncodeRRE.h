@@ -34,7 +34,6 @@ class vncEncodeRRE;
 
 #if !defined(_WINVNC_ENCODERRRE)
 #define _WINVNC_ENCODERRE
-#pragma once
 
 #include "vncEncoder.h"
 

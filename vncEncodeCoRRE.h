@@ -33,7 +33,6 @@ class vncEncodeCoRRE;
 
 #if !defined(_WINVNC_ENCODECORRRE)
 #define _WINVNC_ENCODECORRE
-#pragma once
 
 #include "vncEncoder.h"
 #include "vdr/plugin.h"

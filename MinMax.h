@@ -28,7 +28,6 @@
 
 #if !defined(MINMAX_INCLUDED)
 #define MINMAX_INCLUDED
-#pragma once
 
 // Some routines used internally to minimise and maximise integers
 inline int Max(int x, int y)

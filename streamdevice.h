@@ -34,7 +34,11 @@ public:
   virtual void StillPicture(const uchar *Data, int Length);
   virtual bool Poll(cPoller &Poller, int TimeoutMs = 0);
   virtual int PlayVideo(const uchar *Data, int Length);
+#if VDRVERSNUM < 10342   
+  virtual int PlayAudio(const uchar *Data, int Length);
+#else
   virtual int PlayAudio(const uchar *Data, int Length, uchar Id);
+#endif  
   virtual int ProvidesCa(const cChannel *Channel) const;
   virtual void MakePrimaryDevice(bool On);
   uchar *Get(int &Count) { return m_Remux->Get(Count); }

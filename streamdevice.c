@@ -112,7 +112,11 @@ bool cStreamDevice::Poll(cPoller &Poller, int TimeoutMs)
 }
 /* ----------------------------------------------------------------------------
  */
+#if VDRVERSNUM < 10342
+int cStreamDevice::PlayAudio(const uchar *Data, int Length)
+#else
 int cStreamDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
+#endif
 {
    if (cTSWorker::HaveStreamClient()) 
    {

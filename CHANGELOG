@@ -32,3 +32,6 @@ Changelog
     - fixed buffer overflow bug
     - fixed several other bugs
     - tested with vdr-1.3.43
+    
+  2006-02-27:
+    - fixed version conflict on cStreamDevice::PlayAudio

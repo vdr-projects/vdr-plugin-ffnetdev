@@ -40,7 +40,12 @@ public:
   virtual cOsdObject *MainMenuAction(void);
   virtual cMenuSetupPage *SetupMenu(void);
   virtual bool SetupParse(const char *Name, const char *Value);
+
+#if VDRVERSNUM >= 10347
+  virtual cString Active(void);
+#elif
   virtual bool Active(void);
+#endif
   
   void SetPrimaryDevice();
   void RestorePrimaryDevice();

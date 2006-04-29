@@ -127,9 +127,19 @@ bool cPluginFFNetDev::ProcessArgs(int argc, char *argv[])
   return true;
 }
 
-bool cPluginFFNetDev::Active(void) {
-	return (cOSDWorker::Active() || cTSWorker::Active());
+#if VDRVERSNUM >= 10347
+cString cPluginFFNetDev::Active(void) {
+
+    if(cOSDWorker::Active() || cTSWorker::Active())
+           return tr("ffnetdev is running");
+ 
+    return NULL;
 }
+#elif
+bool cPluginFFNetDev::Active(void) {
+    return (cOSDWorker::Active() || cTSWorker::Active());
+}
+#endif
 
 bool cPluginFFNetDev::Start(void)
 {

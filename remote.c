@@ -29,6 +29,9 @@ bool cMyRemote::Initialize(void)
 
 bool cMyRemote::Put(uint64 Code, bool Repeat, bool Release)
 {
+    if ((cRemote::IsLearning()) && (Release))
+	return false;
+    else
 	return cRemote::Put(Code, Repeat ,Release);
 }
 

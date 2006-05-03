@@ -533,15 +533,14 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 						dsyslog("[ffnetdev] VNC: KeyEvent\n");
 						cMyRemote *pRemote;
 						if ((pRemote = m_pPlugin->GetRemote()) != NULL) {	
-							if (msg.ke.down) 
-								pRemote->Put(Swap32IfLE(msg.ke.key), false, false);
-							else 
-								pRemote->Put(Swap32IfLE(msg.ke.key), false, true);
+							pRemote->Put(Swap32IfLE(msg.ke.key), false, !msg.ke.down);
 						}
 #ifdef DEBUG
-						fprintf(stderr, "[ffnetdev] VNC: Remote: %04X\n", msg.ke.key);
+						fprintf(stderr, "[ffnetdev] VNC: Remote: %04X %s\n", msg.ke.key, 
+						    msg.ke.down ? "down" : "up");
 #endif									
-						dsyslog("[ffnetdev] VNC: Remote: %04X\n", msg.ke.key);
+						dsyslog("[ffnetdev] VNC: Remote: %04X %s\n", msg.ke.key, 
+						    msg.ke.down ? "down" : "up");
 						break;
 		case rfbPointerEvent:		if (!RFBRead( ((char*)&msg.pe)+1, sz_rfbPointerEventMsg-1))
 							return;

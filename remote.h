@@ -17,7 +17,7 @@ public:
   cMyRemote(const char *Name);
   virtual bool Initialize(void);
   virtual bool Ready(void);
-  virtual bool Put(uint64 Code, bool Repeat = false, bool Release = false);
+  virtual bool Put(uint64 Code, bool Repeat, bool Release);
 };
 
 

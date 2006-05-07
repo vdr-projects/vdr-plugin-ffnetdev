@@ -47,20 +47,20 @@ cOSDWorker::cOSDWorker(void)
 	ServerFormat.blueShift	 	= 0;
 	ServerFormat.blueMax	 	= 255;
 	
-	memset(&m_OSDBuffer, 0, sizeof(m_OSDBuffer));
+	m_pOsdBitmap = NULL;
 	
 	numOSDColors		= 1;
 	memset(&OSDColors, 0, sizeof(OSDColors));
 	
-	m_notupdatedLeft   = -1;
-	m_notupdatedTop    = -1;
-	m_notupdatedRight  = -1;
-	m_notupdatedBottom = -1;
+	m_pOsdBitmap = new cBitmap(720, 576, 8, 0, 0);
+	m_pOsdBitmap->DrawRectangle(0, 0, 720, 576, clrTransparent);
+	
 	memset(&m_lasttime, 0, sizeof(m_lasttime));
 	memset(&m_lastupdate, 0, sizeof(m_lastupdate));
 	
 	memset(&ClientFormat, 0, sizeof(ClientFormat));
 	ClientFormat.trueColour = 1;
+	m_bOSDisClear = true;
 }
 
 cOSDWorker::~cOSDWorker() {
@@ -70,11 +70,13 @@ cOSDWorker::~cOSDWorker() {
 	{
 	    m_pEncoder->LogStats();
 	    delete m_pEncoder;
-	    m_pEncoder = NULL;
 	}
 	
 	if (m_pSendBuffer != NULL)
 	    delete [] m_pSendBuffer;
+	    
+	if (m_pOsdBitmap != NULL)
+	    delete m_pOsdBitmap;
 }
 
 
@@ -156,102 +158,96 @@ void cOSDWorker::CreateSendBuffer(int SendBufferSize)
 
 bool cOSDWorker::ClearScreen(void)
 {
-	if (m_Instance == NULL)
+	if ((m_Instance == NULL) || (m_Instance->m_pOsdBitmap == NULL))
 	    return false;
 	
 	// this should be improved;
 	// 1) maybe we should send a our very "special" pseudo encoding[CLEAR_SCREEN] to our "special" VNC client to get an empty screen really fast
 
-	m_Instance->numOSDColors = 1;
-	memset(&m_Instance->OSDColors, 0, sizeof(m_Instance->OSDColors));
-	SendCMAP(m_Instance->numOSDColors, m_Instance->OSDColors);
-		
-	bool bRetVal = false;
-	memset(&(m_Instance->m_OSDBuffer), 0, 720*576); 
 	memset(&(m_Instance->m_lasttime), 0, sizeof(m_Instance->m_lasttime));
-	bRetVal = SendScreen(720,0,0,720,576,&(m_Instance->m_OSDBuffer));
 	
-	return bRetVal;
+	m_Instance->m_pOsdBitmap->DrawRectangle(0, 0, 720, 576, clrTransparent);
+	m_Instance->SendScreen();
+	
+	rfbBellMsg fu;
+	fu.type=rfbBell;
+	OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
+	
+	m_Instance->m_bOSDisClear = true;
+	
+	return true;
+}
+
+bool cOSDWorker::DrawBitmap(int x1, int y1, cBitmap &pOsdBitmap)
+{
+    if (m_Instance->m_pOsdBitmap != NULL)
+    {
+	m_Instance->m_pOsdBitmap->DrawBitmap(x1, y1, pOsdBitmap);
+	return true;
+    }
+    
+    return false;
 }
 
 
-bool cOSDWorker::SendScreen(unsigned int stride, unsigned int x1, unsigned int y1, unsigned int w, unsigned int h, const void *data)
+bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
 {
-   if (m_Instance == NULL)
+   if ((m_Instance == NULL) || (m_Instance->m_pOsdBitmap == NULL))
 	return false;
-	    
-   rfbFramebufferUpdateMsg fu;
-   rfbFramebufferUpdateRectHeader furh;
-   
-   unsigned int x;
-   unsigned int y;
-   for (y=0; y<h; y++)
-      for (x=0; x<w; x++)
-   	 m_Instance->m_OSDBuffer[(720*(y+y1))+x+x1] = *((unsigned char *)data+(y*stride)+x);
-
-    x = x1;
-    y = y1;
-    x1 = (m_Instance->m_notupdatedLeft   != -1 && m_Instance->m_notupdatedLeft  < (int)x1)
-    	 ? m_Instance->m_notupdatedLeft : x1;
-    y1 = (m_Instance->m_notupdatedTop    != -1 && m_Instance->m_notupdatedTop   < (int)y1)
-	 ? m_Instance->m_notupdatedTop  : y1;
 	
-    w  = (m_Instance->m_notupdatedRight  != -1 && m_Instance->m_notupdatedRight > (int)(x1 + w))
-	 ? m_Instance->m_notupdatedRight  - x1 : w + (x - x1);
-    h  = (m_Instance->m_notupdatedBottom != -1 && m_Instance->m_notupdatedBottom > (int)(y1 + h)) 
-	 ? m_Instance->m_notupdatedBottom - y1 : h + (y - y1);
-
-   struct timeval curtime;
-   gettimeofday(&curtime, 0);
-   curtime.tv_sec = curtime.tv_sec - (((int)curtime.tv_sec / 1000000) * 1000000);
-   if ((curtime.tv_sec * 1000 + (curtime.tv_usec / 1000) < m_Instance->m_lasttime.tv_sec * 1000 + (m_Instance->m_lasttime.tv_usec / 1000) + 100) ||
-      (m_Instance->m_pEncoder == NULL))
-   {
-        m_Instance->m_notupdatedLeft   = (int)x1;
-	m_Instance->m_notupdatedTop    = (int)y1;
-	m_Instance->m_notupdatedRight  = (int)(x1 + w);
-	m_Instance->m_notupdatedBottom = (int)(y1 + h);
-	m_Instance->m_lasttime = curtime;
+   if ((m_Instance->state==HANDSHAKE_OK) && (m_Instance->m_pEncoder != NULL) &&
+       (x1 || x2 || y1 || y2 || (m_Instance->m_pOsdBitmap->Dirty(x1, y1, x2, y2))))
+   {	    
+	rfbFramebufferUpdateMsg fu;
+	struct timeval curtime;
+	gettimeofday(&curtime, 0);
+	curtime.tv_sec = curtime.tv_sec - (((int)curtime.tv_sec / 1000000) * 1000000);
+	if ((curtime.tv_sec * 1000 + (curtime.tv_usec / 1000) < m_Instance->m_lasttime.tv_sec * 1000 + (m_Instance->m_lasttime.tv_usec / 1000) + 100) ||
+    	    (m_Instance->m_pEncoder == NULL))
+	{
+	    m_Instance->m_lasttime = curtime;	
+	    return false;
+	}
+	else
+	{
+	    m_Instance->m_lasttime = curtime;
+	    m_Instance->m_lastupdate = curtime;
+	}
 	
-	return false;
-   }
-   else
-   {
-	m_Instance->m_notupdatedLeft   = -1;
-	m_Instance->m_notupdatedTop    = -1;
-	m_Instance->m_notupdatedRight  = -1;
-	m_Instance->m_notupdatedBottom = -1;
-	m_Instance->m_lasttime = curtime;
-	m_Instance->m_lastupdate = curtime;
-   }
-    
-   if ((m_Instance->state==HANDSHAKE_OK) && (m_Instance->m_pEncoder != NULL)) {
-	RECT rect = {x1, y1, x1 + w, y1 + h};
+	if (m_Instance->m_pEncoder != NULL)
+	    m_Instance->m_pEncoder->SetLocalFormat(m_Instance->ServerFormat, 720, 576);
+	
+	RECT rect = {x1, y1, x2, y2};
    	fu.type=rfbFramebufferUpdate;
    	fu.nRects=Swap16IfLE(1);
    	OSDWrite((unsigned char*)&fu, sz_rfbFramebufferUpdateMsg);
-	
-	int BufferSize = m_Instance->m_pEncoder->RequiredBuffSize(w, h);
+	int BufferSize = m_Instance->m_pEncoder->RequiredBuffSize(x2-x1, y2-y1);
 	m_Instance->CreateSendBuffer(BufferSize);
-	BufferSize = m_Instance->m_pEncoder->EncodeRect( &(m_Instance->m_OSDBuffer[0]), m_Instance->m_pSendBuffer, rect);
+	BufferSize = m_Instance->m_pEncoder->EncodeRect((BYTE*)(m_Instance->m_pOsdBitmap->Data(0, 0)), m_Instance->m_pSendBuffer, rect);
 #ifdef DEBUG
 	fprintf(stderr, "[ffnetdev] VNC: Send OSD Data %d Bytes\n", BufferSize);
 #endif
 	dsyslog("[ffnetdev] VNC: Send OSD Data %d Bytes\n", BufferSize);
        	OSDWrite((unsigned char*)m_Instance->m_pSendBuffer, BufferSize);
+	m_Instance->m_pOsdBitmap->Clean();
 	
-	if ((m_Instance->numOSDColors == 0) || ((m_Instance->numOSDColors == 1) && (m_Instance->OSDColors[0] == 0)))
-	{
-	    rfbBellMsg fu;
-	    fu.type=rfbBell;
-	    OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
-	}
-
+	m_Instance->m_bOSDisClear = false;
+	
    	return true;
    }
    else {
 	return false;
    }
+}
+
+
+bool cOSDWorker::GetOSDColors(const tColor **OSDColors, int *numOSDColors) 
+{ 
+    if ((m_Instance == NULL) || (m_Instance->m_pOsdBitmap == NULL))
+	return false;
+	
+    *OSDColors = (tColor*)m_Instance->m_pOsdBitmap->Colors(*numOSDColors);
+    return true;
 }
 
 
@@ -488,6 +484,8 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 							    m_pEncoder->SetQualityLevel(9);
 							    m_pEncoder->SetRemoteFormat(ClientFormat);
 							}
+							
+							ClearScreen();
 						}
 						break;
 		case rfbFramebufferUpdateRequest:
@@ -512,18 +510,18 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 								Swap16IfLE(msg.fur.h)
 							);
 							
-						if (numOSDColors > 0)
-						{
-						    SendCMAP(numOSDColors, OSDColors);
-						    SendScreen(720, //stride
-							Swap16IfLE(msg.fur.x), Swap16IfLE(msg.fur.y),
-						        Swap16IfLE(msg.fur.w), Swap16IfLE(msg.fur.h),
-						  	&m_OSDBuffer);
-						}
-						else
+	
+						if (m_bOSDisClear)
 						{
 						    ClearScreen();
 						}
+						else
+						{
+						    SendScreen(	Swap16IfLE(msg.fur.x), Swap16IfLE(msg.fur.y),
+						    		Swap16IfLE(msg.fur.x + msg.fur.w), 
+								Swap16IfLE(msg.fur.y + msg.fur.h));
+						}
+						
 						break;
 		case rfbKeyEvent:		if (!RFBRead( ((char*)&msg.ke)+1, sz_rfbKeyEventMsg-1))
 							return;
@@ -747,15 +745,10 @@ void cOSDWorker::Action(void) {
 		struct timeval curtime;
 		gettimeofday(&curtime, 0);
 		curtime.tv_sec = curtime.tv_sec - (((int)curtime.tv_sec / 1000000) * 1000000);
-		if ((curtime.tv_sec * 1000 + (curtime.tv_usec / 1000) > m_lastupdate.tv_sec * 1000 + (m_lastupdate.tv_usec / 1000) + 500) &&
-		    (m_notupdatedLeft != -1) && (m_notupdatedTop != -1) && (m_notupdatedRight != -1) && 
-		    (m_notupdatedBottom != -1))
+		if ((curtime.tv_sec * 1000 + (curtime.tv_usec / 1000) > m_lastupdate.tv_sec * 1000 + (m_lastupdate.tv_usec / 1000) + 500))
 		{
 		    memset(&m_lasttime, 0, sizeof(m_lasttime));
-		    SendScreen(720, m_notupdatedLeft, m_notupdatedTop, 
-			       m_notupdatedRight  - m_notupdatedLeft, 
-			       m_notupdatedBottom - m_notupdatedTop, 
-			       &(m_Instance->m_OSDBuffer[m_notupdatedTop * 720 + m_notupdatedLeft]));
+		    SendScreen();
 		}
 	} // while(m_Active)
 

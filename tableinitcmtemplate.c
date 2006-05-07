@@ -63,7 +63,7 @@ rfbInitColourMapSingleTableOUT (char **table,
 	ReleaseDC(NULL, hDC);
 	*/
 	
-	tColor *pColors;
+	const tColor *pColors;
 	int    NumColors;	
 	cOSDWorker::GetOSDColors(&pColors, &NumColors);
 
@@ -74,7 +74,7 @@ rfbInitColourMapSingleTableOUT (char **table,
     OUT_T outRed, outGreen, outBlue;
     OUT_T *t = (OUT_T *)*table;
     
-    tColor *pColor = pColors;
+    const tColor *pColor = pColors;
     for (i = 0; i < NumColors; i++)
 	{
 		// Split down the RGB data

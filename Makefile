@@ -31,7 +31,7 @@ TMPDIR = /tmp
 
 ### The version number of VDR (taken from VDR's "config.h"):
 
-VDRVERSION = $(shell grep 'define VDRVERSION ' $(VDRDIR)/config.h | awk '{ print $$3 }' | sed -e 's/"//g')
+APIVERSION = $(shell grep 'define APIVERSION ' $(VDRDIR)/config.h | awk '{ print $$3 }' | sed -e 's/"//g')
 
 ### The name of the distribution archive:
 
@@ -95,7 +95,7 @@ libvdr-$(PLUGIN).so: $(SERVEROBJS) $(COMMONOBJS)
 
 %.so: 
 	$(CXX) $(CXXFLAGS) -shared $^ -o $@
-	@cp $@ $(LIBDIR)/$@.$(VDRVERSION)
+	@cp $@ $(LIBDIR)/$@.$(APIVERSION)
 
 dist: clean
 	@-rm -rf $(TMPDIR)/$(ARCHIVE)

@@ -67,11 +67,11 @@ private:
 	rfbPixelFormat  ClientFormat;
 	rfbPixelFormat  ServerFormat;
 	
-	BYTE		m_OSDBuffer[720*576];
-//	BYTE		m_oldOSDData[720*576];
 	BYTE		*m_pSendBuffer;
 	int		m_SendBufferSize;
+	cBitmap		*m_pOsdBitmap;
 	tColor 		OSDColors[256];
+	bool 		m_bOSDisClear;
 
 	void HandleClientRequests(cTBSelect *select);
 	bool RFBRead(char *buffer, int len);
@@ -81,10 +81,6 @@ private:
 	
 	struct timeval  m_lasttime;
 	struct timeval  m_lastupdate;
-	int		m_notupdatedLeft;
-	int		m_notupdatedTop;
-	int		m_notupdatedRight;
-	int		m_notupdatedBottom;
 	
 	cPluginFFNetDev *m_pPlugin;
 	
@@ -103,11 +99,12 @@ public:
 	static void CloseOSDClient(void);
 
 	static bool ClearScreen(void);
-        static bool SendScreen(unsigned int stride, unsigned int x1, unsigned int y1, unsigned int w, unsigned int h, const void *data);
+	static bool DrawBitmap(int x1, int y1, cBitmap &pOsdBitmap);
+        static bool SendScreen(int x1=0, int y1=0, int x2=0, int y2=0);
     	static bool SendCMAP(int NumColors, const tColor *Colors);
     	static bool OSDWrite(unsigned char *data, unsigned int data_length);
     	static bool SendPlayMode(ePlayMode PlayMode);
-	static void GetOSDColors(tColor **OSDColors, int *numOSDColors) { *OSDColors = &m_Instance->OSDColors[0]; (*numOSDColors) = m_Instance->numOSDColors; };
+	static bool GetOSDColors(const tColor **OSDColors, int *numOSDColors);
 };
 
 inline bool cOSDWorker::Active(void) {

@@ -85,7 +85,7 @@ const char *cPluginFFNetDev::CommandLineHelp(void)
 bool cPluginFFNetDev::ProcessArgs(int argc, char *argv[])
 {
   // Implement command line argument processing here if applicable.
-  fprintf (stderr, "[ffnetdev] processing args.\n");
+  dsyslog("[ffnetdev] processing args.\n");
   static struct option long_options[] = {
       { "tsport",    		required_argument	, NULL, 't' },
       { "osdport",   		required_argument	, NULL, 'o' },
@@ -97,33 +97,34 @@ bool cPluginFFNetDev::ProcessArgs(int argc, char *argv[])
   while ((c = getopt_long(argc, argv, "t:o:e", long_options, NULL)) != -1) {
         switch (c) {
           case 'e': EnableRemote = true;
+		    dsyslog("[ffnetdev] Remote enabled\n");
           	    break;
           case 't': if (isnumber(optarg)) {
                        int n = atoi(optarg);
                        if (0 < n && n < 65536) {
                           TSPort = n;
-                          fprintf(stderr, "[ffnetdev] TS Port: %d\n", n);
+                          dsyslog("[ffnetdev] TS Port: %d\n", n);
                           break;
                        }
                     }
-                    fprintf(stderr, "[ffnetdev] invalid port number: %s\n", optarg);
+                    esyslog("[ffnetdev] invalid port number: %s\n", optarg);
                     return 2;
                     break;
           case 'o': if (isnumber(optarg)) {
                        int n = atoi(optarg);
                        if (0 < n && n < 65536) {
                           OSDPort = n;
-                          fprintf(stderr, "[ffnetdev] OSD Port: %d\n", n);
+                          dsyslog("[ffnetdev] OSD Port: %d\n", n);
                           break;
                        }
                     }
-                    fprintf(stderr, "[ffnetdev] invalid port number: %s\n", optarg);
+                    esyslog("[ffnetdev] invalid port number: %s\n", optarg);
                     return 2;
                     break;
 	  default : return 2;
 	}
   }
-  fprintf (stderr, "[ffnetdev] finished processing args.\n");
+  dsyslog("[ffnetdev] finished processing args.\n");
   return true;
 }
 
@@ -156,7 +157,7 @@ bool cPluginFFNetDev::Start(void)
 bool cPluginFFNetDev::Initialize(void)
 {
   // Start any background activities the plugin shall perform.
-  fprintf(stderr,"[ffnetdev] initializing plugin.\n");
+  dsyslog("[ffnetdev] initializing plugin.\n");
   m_StreamDevice = new cStreamDevice();
   return true;
 }
@@ -169,7 +170,7 @@ void cPluginFFNetDev::Housekeeping(void)
 cOsdObject *cPluginFFNetDev::MainMenuAction(void)
 {
   // Perform the action when selected from the main VDR menu.
-  fprintf (stderr, "[ffnetdev] MainMenuAction called.\n");
+  dsyslog("[ffnetdev] MainMenuAction called.\n");
 //  return new cMenuSetupSoftdevice;
   return NULL;
 }
@@ -223,17 +224,11 @@ void cPluginFFNetDev::SetPrimaryDevice()
 	    
 	if (!cRemote::HasKeys())
 	    new cLearningThread();
-#ifdef DEBUG
-	fprintf(stderr, "[ffnetdev] remote control enabled.\n");
-#endif
-	isyslog("[ffnetdev] remote control enabled.\n");
+	dsyslog("[ffnetdev] remote control enabled.\n");
     }
     else 
     {
-#ifdef DEBUG
-	fprintf(stderr, "[ffnetdev] remote control disabled.\n");
-#endif
-	isyslog("[ffnetdev] remote control disabled.\n");
+	dsyslog("[ffnetdev] remote control disabled.\n");
     }
 }
 
@@ -244,10 +239,7 @@ void cPluginFFNetDev::RestorePrimaryDevice()
     while ((cOsd::IsOpen() > 0) && (i-- > 0))
 	cRemote::Put(kBack);
 
-#ifdef DEBUG
-    fprintf(stderr, "[ffnetdev] remote control disabled.\n");
-#endif
-    isyslog("[ffnetdev] remote control disabled.\n");
+    dsyslog("[ffnetdev] remote control disabled.\n");
     
     if (m_origPrimaryDevice != -1)
     {

@@ -30,24 +30,28 @@ bool cTBSocket::Connect(const std::string &Host, unsigned int Port) {
 	m_LocalAddr.sin_addr.s_addr = INADDR_ANY;
 	if (::bind(socket, (struct sockaddr*)&m_LocalAddr, sizeof(m_LocalAddr)) 
 			== -1)
-		return false;
+		goto closefd; //return false;
 
 	m_RemoteAddr.sin_family = AF_INET;
 	m_RemoteAddr.sin_port   = htons(Port);
 	m_RemoteAddr.sin_addr.s_addr = inet_addr(Host.c_str());
 	if (::connect(socket, (struct sockaddr*)&m_RemoteAddr, 
 			sizeof(m_RemoteAddr)) == -1) 
-		return false;
+		goto closefd; //return false;
 
 	len = sizeof(struct sockaddr_in);
 	if (::getpeername(socket, (struct sockaddr*)&m_RemoteAddr, &len) == -1) 
-		return false;
+		goto closefd; //return false;
 	
 	len = sizeof(struct sockaddr_in);
 	if (::getsockname(socket, (struct sockaddr*)&m_LocalAddr, &len) == -1) 
-		return false;
+		goto closefd; //return false;
 
 	return cTBSource::Open(socket);
+
+closefd:
+    ::close(socket);
+    return false;
 }
 
 bool cTBSocket::Listen(const std::string &Ip, unsigned int Port, int BackLog) {
@@ -62,26 +66,30 @@ bool cTBSocket::Listen(const std::string &Ip, unsigned int Port, int BackLog) {
 
 	val = 1;
 	if (::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1)
-		return false;
+		goto closefd; //return false;
 
 	m_LocalAddr.sin_family = AF_INET;
 	m_LocalAddr.sin_port   = htons(Port);
 	m_LocalAddr.sin_addr.s_addr = inet_addr(Ip.c_str());
 	if (::bind(socket, (struct sockaddr*)&m_LocalAddr, sizeof(m_LocalAddr)) 
 			== -1)
-		return false;
+		goto closefd; //return false;
 
 	len = sizeof(struct sockaddr_in);
 	if (::getsockname(socket, (struct sockaddr*)&m_LocalAddr, &len) == -1) 
-		return false;
+		goto closefd; //return false;
 	
 	if (m_Type == SOCK_STREAM && ::listen(socket, BackLog) == -1)
-		return false;
+		goto closefd; //return false;
 	
 	if (!cTBSource::Open(socket))
-		return false;
+		goto closefd; // return false;
 
 	return true;
+
+closefd:
+    :close(socket);
+    return false;
 }
 
 bool cTBSocket::Accept(const cTBSocket &Listener) {

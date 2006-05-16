@@ -40,13 +40,18 @@ public:
   virtual cOsdObject *MainMenuAction(void);
   virtual cMenuSetupPage *SetupMenu(void);
   virtual bool SetupParse(const char *Name, const char *Value);
+  
+#ifndef VDRVERSNUM
+#define VDRVERSNUM 10346
+#endif
 
 #if VDRVERSNUM >= 10347
   virtual cString Active(void);
-#elif
+#elseif
   virtual bool Active(void);
 #endif
-  
+ 
+
   void SetPrimaryDevice();
   void RestorePrimaryDevice();
   cMyRemote *GetRemote() { return m_Remote; }

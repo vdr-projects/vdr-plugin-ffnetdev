@@ -88,7 +88,7 @@ bool cTBSocket::Listen(const std::string &Ip, unsigned int Port, int BackLog) {
 	return true;
 
 closefd:
-    :close(socket);
+    ::close(socket);
     return false;
 }
 

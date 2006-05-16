@@ -63,15 +63,14 @@ private:
 	int 		OSDPort;
 	int 		state;
 	bool 		UseAlpha;
-	int 		numOSDColors;
 	rfbPixelFormat  ClientFormat;
 	rfbPixelFormat  ServerFormat;
 	
 	BYTE		*m_pSendBuffer;
 	int		m_SendBufferSize;
 	cBitmap		*m_pOsdBitmap;
-	tColor 		OSDColors[256];
 	bool 		m_bOSDisClear;
+	bool		m_bColorsChanged;
 
 	void HandleClientRequests(cTBSelect *select);
 	bool RFBRead(char *buffer, int len);

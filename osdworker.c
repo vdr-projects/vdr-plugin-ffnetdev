@@ -47,20 +47,15 @@ cOSDWorker::cOSDWorker(void)
 	ServerFormat.blueShift	 	= 0;
 	ServerFormat.blueMax	 	= 255;
 	
-	m_pOsdBitmap = NULL;
-	
-	numOSDColors		= 1;
-	memset(&OSDColors, 0, sizeof(OSDColors));
-	
 	m_pOsdBitmap = new cBitmap(720, 576, 8, 0, 0);
-	m_pOsdBitmap->DrawRectangle(0, 0, 720, 576, clrTransparent);
 	
 	memset(&m_lasttime, 0, sizeof(m_lasttime));
 	memset(&m_lastupdate, 0, sizeof(m_lastupdate));
 	
 	memset(&ClientFormat, 0, sizeof(ClientFormat));
-	ClientFormat.trueColour = 1;
+	ClientFormat.trueColour = 0;
 	m_bOSDisClear = true;
+	m_bColorsChanged = false;
 }
 
 cOSDWorker::~cOSDWorker() {
@@ -75,8 +70,7 @@ cOSDWorker::~cOSDWorker() {
 	if (m_pSendBuffer != NULL)
 	    delete [] m_pSendBuffer;
 	    
-	if (m_pOsdBitmap != NULL)
-	    delete m_pOsdBitmap;
+	delete m_pOsdBitmap;
 }
 
 
@@ -158,31 +152,47 @@ void cOSDWorker::CreateSendBuffer(int SendBufferSize)
 
 bool cOSDWorker::ClearScreen(void)
 {
-	if ((m_Instance == NULL) || (m_Instance->m_pOsdBitmap == NULL))
-	    return false;
+    int iOldNumColors, iNumColors;
+    
+    if ((m_Instance == NULL) || (m_Instance->m_pOsdBitmap == NULL))
+        return false;
 	
-	// this should be improved;
-	// 1) maybe we should send a our very "special" pseudo encoding[CLEAR_SCREEN] to our "special" VNC client to get an empty screen really fast
+    // this should be improved;
+    // 1) maybe we should send a our very "special" pseudo encoding[CLEAR_SCREEN] to our "special" VNC client to get an empty screen really fast
 
-	memset(&(m_Instance->m_lasttime), 0, sizeof(m_Instance->m_lasttime));
+    memset(&(m_Instance->m_lasttime), 0, sizeof(m_Instance->m_lasttime));
 	
-	m_Instance->m_pOsdBitmap->DrawRectangle(0, 0, 720, 576, clrTransparent);
-	m_Instance->SendScreen();
+    m_Instance->m_pOsdBitmap->Colors(iOldNumColors);
+    m_Instance->m_pOsdBitmap->DrawRectangle(0, 0, 720, 576, clrTransparent);
+    m_Instance->m_pOsdBitmap->Colors(iNumColors);
+    if (iNumColors != iOldNumColors)
+        m_Instance->m_bColorsChanged = true;
+	    
+    m_Instance->SendScreen();
+
+    /*
+    rfbBellMsg fu;
+    fu.type=rfbBell;
+    OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
+    */
 	
-	rfbBellMsg fu;
-	fu.type=rfbBell;
-	OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
+    m_Instance->m_bOSDisClear = true;
 	
-	m_Instance->m_bOSDisClear = true;
-	
-	return true;
+    return true;
 }
 
 bool cOSDWorker::DrawBitmap(int x1, int y1, cBitmap &pOsdBitmap)
 {
+    int iOldNumColors, iNumColors;
+    
     if (m_Instance->m_pOsdBitmap != NULL)
     {
+	m_Instance->m_pOsdBitmap->Colors(iOldNumColors);
 	m_Instance->m_pOsdBitmap->DrawBitmap(x1, y1, pOsdBitmap);
+	m_Instance->m_pOsdBitmap->Colors(iNumColors);
+	if (iNumColors != iOldNumColors)
+	    m_Instance->m_bColorsChanged = true;
+	
 	return true;
     }
     
@@ -214,8 +224,12 @@ bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
 	    m_Instance->m_lastupdate = curtime;
 	}
 	
-	if (m_Instance->m_pEncoder != NULL)
-	    m_Instance->m_pEncoder->SetLocalFormat(m_Instance->ServerFormat, 720, 576);
+	if (m_Instance->m_bColorsChanged)
+	{
+	    int numOSDColors;
+	    const tColor *OSDColors = (tColor*)m_Instance->m_pOsdBitmap->Colors(numOSDColors);
+	    cOSDWorker::SendCMAP(numOSDColors, OSDColors);
+	}
 	
 	RECT rect = {x1, y1, x2, y2};
    	fu.type=rfbFramebufferUpdate;
@@ -253,7 +267,7 @@ bool cOSDWorker::GetOSDColors(const tColor **OSDColors, int *numOSDColors)
 
 bool cOSDWorker::SendCMAP(int NumColors, const tColor *Colors)
 {
-	if (m_Instance == NULL)
+	if ((m_Instance == NULL) || (m_Instance->m_pEncoder == NULL))
 	    return false;
 	
 	rfbSetColourMapEntriesMsg scme;
@@ -265,7 +279,7 @@ bool cOSDWorker::SendCMAP(int NumColors, const tColor *Colors)
        	int i;
 	
 	if ((m_Instance->state==HANDSHAKE_OK) && !(m_Instance->ClientFormat.trueColour)) { 
-		dsyslog("[ffnetdev] VNC: SendColourMapEntries");
+		dsyslog("[ffnetdev] VNC: SendColourMapEntries\n");
 		scme.type=rfbSetColourMapEntries;
 		scme.firstColour = Swap16IfLE(0);
 		scme.nColours = Swap16IfLE((CARD16)NumColors);
@@ -274,33 +288,31 @@ bool cOSDWorker::SendCMAP(int NumColors, const tColor *Colors)
 
         	for(i=0; i<NumColors; i++)
         	{
-           	red   = ((Colors[i]&0x00FF0000) >> 16);
-           	green = ((Colors[i]&0x0000FF00) >>  8);
-           	blue  = ((Colors[i]&0x000000FF) );
+           	    red   = ((Colors[i]&0x00FF0000) >> 16);
+           	    green = ((Colors[i]&0x0000FF00) >>  8);
+           	    blue  = ((Colors[i]&0x000000FF) );
+		    dsyslog("[ffnetdev] VNC: SendColors r=%x g=%x b=%x\n", red, green, blue);
            	
-           	if (m_Instance->UseAlpha) {
+           	    if (m_Instance->UseAlpha) 
+		    {
            		alpha = ((Colors[i]&0xFF000000) >> 24);
                		OSDWrite( (unsigned char*) &alpha, 2);
-           	}
+           	    }
            	
-	        OSDWrite( (unsigned char*) &red, 2);
-      	   	OSDWrite( (unsigned char*) &green, 2);
-	  	OSDWrite( (unsigned char*) &blue, 2);
-	   	
-	   	m_Instance->OSDColors[i] = Colors[i];
+	    	    OSDWrite( (unsigned char*) &red, 2);
+      	   	    OSDWrite( (unsigned char*) &green, 2);
+	  	    OSDWrite( (unsigned char*) &blue, 2);
 		}
-		m_Instance->numOSDColors = NumColors;
-		if (m_Instance->m_pEncoder != NULL)
-		    m_Instance->m_pEncoder->SetLocalFormat(m_Instance->ServerFormat, 720, 576);
+		m_Instance->m_pEncoder->SetLocalFormat(m_Instance->ServerFormat, 720, 576);
+		    
+		m_Instance->m_bColorsChanged = false;
 		
 		return true;
 	} 
 	else {
-		for (i=0; i<NumColors; i++)
-			m_Instance->OSDColors[i] = Colors[i];
-		m_Instance->numOSDColors = NumColors;
-		if (m_Instance->m_pEncoder != NULL)
-		    m_Instance->m_pEncoder->SetLocalFormat(m_Instance->ServerFormat, 720, 576);
+		m_Instance->m_pEncoder->SetLocalFormat(m_Instance->ServerFormat, 720, 576);
+		    
+		m_Instance->m_bColorsChanged = false;
 		
 		return false;
 	}
@@ -391,6 +403,9 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 							ClientFormat = msg.spf.format;
 						dsyslog("[ffnetdev] VNC: RGB %d %d %d %d %d %d\n", 
 							ClientFormat.redShift, ClientFormat.redMax, ClientFormat.greenShift, ClientFormat.greenMax, ClientFormat.blueShift, ClientFormat.blueMax);
+						
+						//if (m_pEncoder != NULL)	
+						//    m_pEncoder->SetRemoteFormat(ClientFormat);	
 						break;
 		case rfbFixColourMapEntries:	if (!RFBRead( ((char*)&msg.fcme)+1, sz_rfbFixColourMapEntriesMsg-1))
 							return;
@@ -466,27 +481,27 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 									}
 									break;
 								case rfbEncSpecialUseAlpha:	
-									if (m_pEncoder == NULL)
-									{
-									    isyslog("[ffnetdev] VNC: ->Special FFnetDev Encoding: client wants alpha channel.\n");
-									}
+									isyslog("[ffnetdev] VNC: ->Special FFnetDev Encoding: client wants alpha channel.\n");
 									UseAlpha = true;
 									break;
 								default:			
 									esyslog("[ffnetdev] VNC: ->Unknown encoding or unknown pseudo encoding.\n");
 							}
 							
-							if (m_pEncoder != NULL)
-							{
-							    m_pEncoder->Init();
-							    m_pEncoder->SetLocalFormat(ServerFormat, 720, 576);
-							    m_pEncoder->SetCompressLevel(6);
-							    m_pEncoder->SetQualityLevel(9);
-							    m_pEncoder->SetRemoteFormat(ClientFormat);
-							}
 							
-							ClearScreen();
 						}
+						
+						if (m_pEncoder != NULL)
+						{
+						    m_pEncoder->Init();
+						    m_pEncoder->SetLocalFormat(ServerFormat, 720, 576);
+						    m_pEncoder->SetCompressLevel(6);
+						    m_pEncoder->SetQualityLevel(9);
+						    m_pEncoder->SetRemoteFormat(ClientFormat);
+						}
+						
+						ClearScreen();
+						
 						break;
 		case rfbFramebufferUpdateRequest:
 						if (!RFBRead( ((char*)&msg.fur)+1, sz_rfbFramebufferUpdateRequestMsg-1))

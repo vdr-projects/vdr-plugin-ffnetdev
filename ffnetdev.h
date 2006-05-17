@@ -47,7 +47,7 @@ public:
 
 #if VDRVERSNUM >= 10347
   virtual cString Active(void);
-#elseif
+#else
   virtual bool Active(void);
 #endif
  

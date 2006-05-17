@@ -168,7 +168,7 @@ bool cOSDWorker::ClearScreen(void)
     if (iNumColors != iOldNumColors)
         m_Instance->m_bColorsChanged = true;
 	    
-    m_Instance->SendScreen();
+    m_Instance->SendScreen(0, 0, 720, 576);
 
     /*
     rfbBellMsg fu;
@@ -498,8 +498,10 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 						    m_pEncoder->SetCompressLevel(6);
 						    m_pEncoder->SetQualityLevel(9);
 						    m_pEncoder->SetRemoteFormat(ClientFormat);
+						    
 						}
 						
+						m_bColorsChanged = true;
 						ClearScreen();
 						
 						break;

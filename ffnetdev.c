@@ -136,7 +136,7 @@ cString cPluginFFNetDev::Active(void) {
  
     return NULL;
 }
-#elseif
+#else
 bool cPluginFFNetDev::Active(void) {
     return (cOSDWorker::Active() || cTSWorker::Active());
 }

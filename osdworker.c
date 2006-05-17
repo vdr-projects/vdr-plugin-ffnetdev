@@ -170,11 +170,12 @@ bool cOSDWorker::ClearScreen(void)
 	    
     m_Instance->SendScreen(0, 0, 720, 576);
 
-    /*
-    rfbBellMsg fu;
-    fu.type=rfbBell;
-    OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
-    */
+    if (m_Instance->ClientFormat.trueColour)
+    {
+	rfbBellMsg fu;
+	fu.type=rfbBell;
+	OSDWrite((unsigned char*)&fu, sz_rfbBellMsg);
+    }
 	
     m_Instance->m_bOSDisClear = true;
 	

@@ -56,6 +56,8 @@ cOSDWorker::cOSDWorker(void)
 	ClientFormat.trueColour = 0;
 	m_bOSDisClear = true;
 	m_bColorsChanged = false;
+	
+	CreateSendBuffer(720 * 576);
 }
 
 cOSDWorker::~cOSDWorker() {
@@ -209,14 +211,24 @@ bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
    if ((m_Instance->state==HANDSHAKE_OK) && (m_Instance->m_pEncoder != NULL) &&
        (x1 || x2 || y1 || y2 || (m_Instance->m_pOsdBitmap->Dirty(x1, y1, x2, y2))))
    {	    
+	dsyslog("[ffnetdev] VNC: Rect x/y/w/h %d/%d/%d/%d\n", x1, y1, x2-x1, y2-y1);
+	
+	if ((x2-x1) * (y2-y1) == 0)
+	{
+	    dsyslog("[ffnetdev] VNC: zero size rect - ignoring\n");
+	    
+	    return false;
+	}
+   
 	rfbFramebufferUpdateMsg fu;
 	struct timeval curtime;
 	gettimeofday(&curtime, 0);
 	curtime.tv_sec = curtime.tv_sec - (((int)curtime.tv_sec / 1000000) * 1000000);
-	if ((curtime.tv_sec * 1000 + (curtime.tv_usec / 1000) < m_Instance->m_lasttime.tv_sec * 1000 + (m_Instance->m_lasttime.tv_usec / 1000) + 100) ||
-    	    (m_Instance->m_pEncoder == NULL))
+	if (curtime.tv_sec * 1000 + (curtime.tv_usec / 1000) < m_Instance->m_lasttime.tv_sec * 1000 + (m_Instance->m_lasttime.tv_usec / 1000) + 100)
 	{
 	    m_Instance->m_lasttime = curtime;	
+	    dsyslog("[ffnetdev] VNC: updatetime to short - ignoring\n");
+	    
 	    return false;
 	}
 	else
@@ -236,9 +248,9 @@ bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
    	fu.type=rfbFramebufferUpdate;
    	fu.nRects=Swap16IfLE(1);
    	OSDWrite((unsigned char*)&fu, sz_rfbFramebufferUpdateMsg);
-	int BufferSize = m_Instance->m_pEncoder->RequiredBuffSize(x2-x1, y2-y1);
-	m_Instance->CreateSendBuffer(BufferSize);
-	BufferSize = m_Instance->m_pEncoder->EncodeRect((BYTE*)(m_Instance->m_pOsdBitmap->Data(0, 0)), m_Instance->m_pSendBuffer, rect);
+	//int BufferSize = m_Instance->m_pEncoder->RequiredBuffSize(x2-x1, y2-y1);
+	//m_Instance->CreateSendBuffer(BufferSize);
+	int BufferSize = m_Instance->m_pEncoder->EncodeRect((BYTE*)(m_Instance->m_pOsdBitmap->Data(0, 0)), m_Instance->m_pSendBuffer, rect);
 #ifdef DEBUG
 	fprintf(stderr, "[ffnetdev] VNC: Send OSD Data %d Bytes\n", BufferSize);
 #endif

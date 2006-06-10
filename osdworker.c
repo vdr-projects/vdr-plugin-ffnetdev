@@ -165,12 +165,15 @@ bool cOSDWorker::ClearScreen(void)
     memset(&(m_Instance->m_lasttime), 0, sizeof(m_Instance->m_lasttime));
 	
     m_Instance->m_pOsdBitmap->Colors(iOldNumColors);
-    m_Instance->m_pOsdBitmap->DrawRectangle(0, 0, 720, 576, clrTransparent);
+    m_Instance->m_pOsdBitmap->DrawRectangle(0, 0, 720-1, 576-1, clrTransparent);
     m_Instance->m_pOsdBitmap->Colors(iNumColors);
     if (iNumColors != iOldNumColors)
         m_Instance->m_bColorsChanged = true;
 	    
-    m_Instance->SendScreen(0, 0, 720, 576);
+    if (m_Instance->m_bColorsChanged)
+	m_Instance->SendScreen(0, 0, 720-1, 576-1);
+    else
+	m_Instance->SendScreen();
 
     if (m_Instance->ClientFormat.trueColour)
     {
@@ -211,9 +214,9 @@ bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
    if ((m_Instance->state==HANDSHAKE_OK) && (m_Instance->m_pEncoder != NULL) &&
        (x1 || x2 || y1 || y2 || (m_Instance->m_pOsdBitmap->Dirty(x1, y1, x2, y2))))
    {	    
-	dsyslog("[ffnetdev] VNC: Rect x/y/w/h %d/%d/%d/%d\n", x1, y1, x2-x1, y2-y1);
+	dsyslog("[ffnetdev] VNC: Rect x/y/w/h %d/%d/%d/%d\n", x1, y1, x2-x1+1, y2-y1+1);
 	
-	if ((x2-x1) * (y2-y1) == 0)
+	if ((x2-x1+1) * (y2-y1+1) == 0)
 	{
 	    dsyslog("[ffnetdev] VNC: zero size rect - ignoring\n");
 	    
@@ -548,8 +551,8 @@ void cOSDWorker::HandleClientRequests(cTBSelect *select)
 						else
 						{
 						    SendScreen(	Swap16IfLE(msg.fur.x), Swap16IfLE(msg.fur.y),
-						    		Swap16IfLE(msg.fur.x + msg.fur.w), 
-								Swap16IfLE(msg.fur.y + msg.fur.h));
+						    		Swap16IfLE(msg.fur.x + msg.fur.w - 1), 
+								Swap16IfLE(msg.fur.y + msg.fur.h - 1));
 						}
 						
 						break;

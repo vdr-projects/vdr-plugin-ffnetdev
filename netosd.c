@@ -59,9 +59,9 @@ void cNetOSD::Flush(void)
        if (Bitmap->Dirty(x1, y1, x2, y2))   
        {  
 #ifdef DEBUG         
-	        fprintf(stderr, "[ffnetdev] NetOSD: Left: %d, Top: %d, X0: %d, Y0: %d, Width: %d, Height: %d\n", 
-               			 Left(), Top(), Bitmap->X0(), Bitmap->Y0(), Bitmap->Width(), Bitmap->Height()); 
-       		fprintf(stderr, "[ffnetdev] NetOSD: Dirty area x1: %d, y1: %d, x2: %d, y2: %d\n",x1,y1,x2,y2);
+	        //fprintf(stderr, "[ffnetdev] NetOSD: Left: %d, Top: %d, X0: %d, Y0: %d, Width: %d, Height: %d\n", 
+               	//		 Left(), Top(), Bitmap->X0(), Bitmap->Y0(), Bitmap->Width(), Bitmap->Height()); 
+       		//fprintf(stderr, "[ffnetdev] NetOSD: Dirty area x1: %d, y1: %d, x2: %d, y2: %d\n",x1,y1,x2,y2);
 #endif
 		cOSDWorker::DrawBitmap(Left() + Bitmap->X0(), Top() + Bitmap->Y0(), *Bitmap);
        		

@@ -81,8 +81,8 @@ vncEncodeHexT::NumCodedRects(RECT &rect)
 UINT
 vncEncodeHexT::EncodeRect(BYTE *source, BYTE *dest, const RECT &rect)
 {
-	const UINT rectW = rect.right - rect.left;
-	const UINT rectH = rect.bottom - rect.top;
+	const UINT rectW = rect.right - rect.left + 1;
+	const UINT rectH = rect.bottom - rect.top + 1;
 	int encodedResult;
 
 	// Create the rectangle header
@@ -176,8 +176,8 @@ vncEncodeHexT::EncodeHextiles##bpp(BYTE *source, BYTE *dest,				\
 			RECT hexrect;													\
 			hexrect.left = x;												\
 			hexrect.top = y;												\
-			hexrect.right = x+w;											\
-			hexrect.bottom = y+h;											\
+			hexrect.right = x+w-1;											\
+			hexrect.bottom = y+h-1;											\
 			Translate(source, (BYTE *) &clientPixelData, hexrect);			\
 																			\
 			rectoffset = destoffset;										\

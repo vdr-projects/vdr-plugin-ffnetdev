@@ -44,6 +44,11 @@ public:
 	   otherwise, setting errno appropriately. */
 	virtual bool Shutdown(int How);
 
+	/* OpenUDP() Open the associated socket. 
+	   Returns true on success and false otherwise, setting errno 
+	   appropriately. */
+	virtual bool OpenUDP(const std::string &Ip, uint Port);
+	
 	/* Close() closes the associated socket and releases all structures. 
 	   Returns true on success and false otherwise, setting errno 
 	   appropriately. The object is in the closed state afterwards, regardless
@@ -102,7 +107,11 @@ inline ssize_t cTBSocket::SysRead(void *Buffer, size_t Length) const {
 }
 
 inline ssize_t cTBSocket::SysWrite(const void *Buffer, size_t Length) const {
-	return ::send(*this, Buffer, Length, 0);
+	if ((m_Type == SOCK_DGRAM)) {
+		socklen_t len = sizeof(m_RemoteAddr);
+		return ::sendto(*this, Buffer, Length, 0, (sockaddr*)&m_RemoteAddr, len);
+	} else
+		return ::send(*this, Buffer, Length, 0);
 }
 
 #endif // TOOLBOX_SOCKET_H

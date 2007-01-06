@@ -16,6 +16,8 @@
 #include "netosd.h"
 #include "ffnetdev.h"
 
+typedef unsigned long long u64;
+
 
 // --- cTSWorker -------------------------------------------------------------
 
@@ -30,9 +32,12 @@ private:
 	int TSPort;
 	int origPrimaryDevice;
 	cPluginFFNetDev *m_pPlugin;	
+	u64 get_time(void);
 
 protected:
 	virtual void Action(void);
+	virtual void ActionTCP(void);
+	virtual void ActionUDP(void);
 	void Stop(void);
 public:
 	cTSWorker(void);

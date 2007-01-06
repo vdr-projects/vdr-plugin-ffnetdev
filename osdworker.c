@@ -253,15 +253,18 @@ bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
    	OSDWrite((unsigned char*)&fu, sz_rfbFramebufferUpdateMsg);
 	//int BufferSize = m_Instance->m_pEncoder->RequiredBuffSize(x2-x1, y2-y1);
 	//m_Instance->CreateSendBuffer(BufferSize);
-	int BufferSize = m_Instance->m_pEncoder->EncodeRect((BYTE*)(m_Instance->m_pOsdBitmap->Data(0, 0)), m_Instance->m_pSendBuffer, rect);
+	if (m_Instance->m_pEncoder != NULL)
+	{
+	    int BufferSize = m_Instance->m_pEncoder->EncodeRect((BYTE*)(m_Instance->m_pOsdBitmap->Data(0, 0)), m_Instance->m_pSendBuffer, rect);
 #ifdef DEBUG
-	fprintf(stderr, "[ffnetdev] VNC: Send OSD Data %d Bytes\n", BufferSize);
+	    fprintf(stderr, "[ffnetdev] VNC: Send OSD Data %d/%d/%d/%d x1/y1/x2/y2 %d Bytes\n", x1, y1, x2, y2, BufferSize);
 #endif
-	dsyslog("[ffnetdev] VNC: Send OSD Data %d Bytes\n", BufferSize);
-       	OSDWrite((unsigned char*)m_Instance->m_pSendBuffer, BufferSize);
-	m_Instance->m_pOsdBitmap->Clean();
+	    dsyslog("[ffnetdev] VNC: Send OSD Data %d/%d/%d/%d x1/y1/x2/y2 %d Bytes\n", x1, y1, x2, y2, BufferSize);
+       	    OSDWrite((unsigned char*)m_Instance->m_pSendBuffer, BufferSize);
+	    m_Instance->m_pOsdBitmap->Clean();
 	
-	m_Instance->m_bOSDisClear = false;
+	    m_Instance->m_bOSDisClear = false;
+	}
 	
    	return true;
    }

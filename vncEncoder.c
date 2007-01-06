@@ -121,8 +121,8 @@ vncEncoder::Translate(BYTE *source, BYTE *dest, const RECT &rect)
 					(char *)sourcepos,
 					(char *)dest,
 					m_bytesPerRow,
-					rect.right-rect.left,
-					rect.bottom-rect.top
+					rect.right-rect.left+1,
+					rect.bottom-rect.top+1
 					);
 }
 
@@ -142,8 +142,8 @@ inline UINT
 vncEncoder::EncodeRect(BYTE *source, BYTE *dest, const RECT &rect)
 {
 
-	const int rectW = rect.right - rect.left;
-	const int rectH = rect.bottom - rect.top;
+	const int rectW = rect.right - rect.left + 1;
+	const int rectH = rect.bottom - rect.top + 1;
 
 
 	// Create the header for the update in the destination area

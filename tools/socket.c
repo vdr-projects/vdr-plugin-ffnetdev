@@ -8,7 +8,8 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define UDP_TX_BUF_SIZE ((188*7+3)*20)
+#define UDP_TX_BUF_SIZE (188*348)
+//#define TCP_TX_BUF_SIZE (1024 * 30)
 
 cTBSocket::cTBSocket(int Type) {
 	memset(&m_LocalAddr, 0, sizeof(m_LocalAddr));
@@ -21,7 +22,7 @@ cTBSocket::~cTBSocket() {
 }
 
 bool cTBSocket::OpenUDP(const std::string &Host, unsigned int Port) {
-	int socket, tmp;
+	int socket;
 	struct sockaddr_in my_addr;
 
 	if (IsOpen()) Close();
@@ -36,16 +37,18 @@ bool cTBSocket::OpenUDP(const std::string &Host, unsigned int Port) {
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(Port);
 	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-		    
+
+	/* limit the tx buf size to limit latency */
+#ifdef UDP_TX_BUF_SIZE
+	int tmp = UDP_TX_BUF_SIZE;
+	if (setsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&tmp, sizeof(tmp)) < 0)
+	    goto closefd;
+#endif
+
 /*	tmp = 1;
 	if (setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (char*)&tmp, sizeof(tmp)) < 0)
 	    goto closefd;*/
 		    
-	/* limit the tx buf size to limit latency */
-	tmp = UDP_TX_BUF_SIZE;
-	if (setsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&tmp, sizeof(tmp)) < 0)
-	    goto closefd;
-
 	/* the bind is needed to give a port to the socket now */
 /*	if (bind(socket,(struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) 
 	    goto closefd;*/
@@ -107,6 +110,13 @@ bool cTBSocket::Listen(const std::string &Ip, unsigned int Port, int BackLog) {
 	
 	if ((socket = ::socket(PF_INET, m_Type, IPPROTO_IP)) == -1)
 		return false;
+
+	/* limit the tx buf size to limit latency */
+#ifdef TCP_TX_BUF_SIZE
+	int tmp = TCP_TX_BUF_SIZE;
+	if (setsockopt(socket, SOL_SOCKET, SO_SNDBUF, (char*)&tmp, sizeof(tmp)) < 0)
+	    goto closefd;
+#endif
 
 	val = 1;
 	if (::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) == -1)

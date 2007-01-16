@@ -17,7 +17,7 @@
 
 class cStreamDevice: public cDevice {
 private:
-	  cPES2TSRemux *m_Remux;
+	  cPESRemux *m_Remux;
 protected:
 public:
   cStreamDevice(void);
@@ -47,6 +47,7 @@ public:
   void Del(int Count) { m_Remux->DelOutput(Count); }
   void ClearOutput() { m_Remux->ClearOutput(); }
   int Available(void) { return m_Remux->Available(); }
+  int Free(void) { return m_Remux->Free(); }
 };
 
 #endif

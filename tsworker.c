@@ -4,7 +4,7 @@
  * See the README file for copyright information and how to reach the author.
  *
  */
- 
+
 #include <sys/time.h>
 
 #include <vdr/tools.h>
@@ -17,9 +17,11 @@
 
 #define TS_PACKET_SIZE (188)
 #define UDP_PACKET_SIZE (TS_PACKET_SIZE * 7)
-#define UDP_MAX_BITRATE 7000000
+#define UDP_MAX_BITRATE 8112832
 #define UDP_SEND_INTERVALL 1000
+#define TCP_SEND_SIZE (1024 * 10)
 
+// 8388608 = 8MBit
 struct TSData
 {
 	char packNr;
@@ -188,6 +190,7 @@ void cTSWorker::ActionTCP(void) {
 				m_StreamDevice->LockOutput();
       				uchar *buffer = m_StreamDevice->Get(count);
 				if (buffer!=NULL) {
+				   count = (count > TCP_SEND_SIZE) ? TCP_SEND_SIZE : count;
 					int available = count;
 					int done      = 0;
 					int written   = 0;
@@ -225,15 +228,16 @@ void cTSWorker::ActionTCP(void) {
 					bytessend += count;
 					if (curtime.tv_sec > oldtime.tv_sec + 10)
 					{
-						double secs = (curtime.tv_sec * 1000 + (curtime.tv_usec / 1000)) / 1000 
-							- (oldtime.tv_sec * 1000 + (oldtime.tv_usec / 1000)) / 1000;
+						double secs = (curtime.tv_sec * 1000 + (curtime.tv_usec / 1000.0)) / 1000 
+							- (oldtime.tv_sec * 1000 + (oldtime.tv_usec / 1000.0)) / 1000;
 						double rate = (double)((bytessend - oldbytessend) / secs) * 8 / 1024 / 1024;
+						int bufstat = m_StreamDevice->Available() * 100 / (m_StreamDevice->Available() + m_StreamDevice->Free()); 
 #ifdef DEBUG
-						fprintf(stderr, "[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send\n",
-							rate, bytessend - oldbytessend);
+						fprintf(stderr, "[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
+							rate, bytessend - oldbytessend, bufstat);
 #endif						
-						dsyslog("[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send\n",
-							rate, bytessend - oldbytessend);
+						dsyslog("[ffnetdev] Streamer: Rate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
+							rate, bytessend - oldbytessend, bufstat);
 						
 						oldbytessend = bytessend;
 						oldtime = curtime;
@@ -337,12 +341,13 @@ void cTSWorker::ActionUDP(void)
 				int written   = 0;
 				char data[100];
 				int  rcvCount;
+				int sleepTime;
 
-				rcvCount=m_StreamClient.Read(data, 10);
+			/*	rcvCount=m_StreamClient.Read(data, 10);
 				if (rcvCount > 0)
 				{
 					isyslog("[ffnetdev] Streamer: empfangen:%d Bytes\n", rcvCount);
-				}
+				}*/
 
 				if (oldPacketTime == 0)
 					oldPacketTime = get_time()- UDP_SEND_INTERVALL;
@@ -350,52 +355,21 @@ void cTSWorker::ActionUDP(void)
 				while ((available > 0) && (have_Streamclient == true) &&
 					   (!close_Streamclient_request))
 				{
-					while ((tsData.packsCount * TS_PACKET_SIZE < UDP_PACKET_SIZE) && (available > 0))
-					{
-						int moveCount = (available >= TS_PACKET_SIZE) ?  TS_PACKET_SIZE : available;
-						moveCount = (moveCount + restData >= TS_PACKET_SIZE) ?  TS_PACKET_SIZE - restData : moveCount;
-						memcpy(&tsData.data[(tsData.packsCount * TS_PACKET_SIZE) + restData], &buffer[done], moveCount);
-						available -= moveCount;
-						done += moveCount;
-						if (restData + moveCount == TS_PACKET_SIZE)
-						{
-							char *data = &tsData.data[tsData.packsCount * TS_PACKET_SIZE];
-							for (int i = 0; i < 4; i++)
-							{	
-								tsData.tsHeaderCRC += (char)*(data + i);
-							}
-							restData = 0;
-							tsData.packsCount ++;
-						}
-						else
-						{
-							restData = moveCount;
-							continue;
-						}
-					}
-
-					if (restData > 0)
-						continue;
-
-					while (get_time() < oldPacketTime + UDP_SEND_INTERVALL)
-						cCondWait::SleepMs(1);
+					while ((sleepTime = oldPacketTime + UDP_SEND_INTERVALL - get_time()) > 0)
+						usleep(sleepTime);
 
 					if (toSend == 0)
 						toSend = (long)(UDP_MAX_BITRATE * (((double)get_time() - oldPacketTime) / 1000000) / 8);
 					
-					int sendcount = tsData.packsCount * TS_PACKET_SIZE + 3;
-					if (toSend < sendcount)
-					{
-						toSend = 0;
-						oldPacketTime = get_time();
-						continue;
-					}
+					int sendcount = (available > toSend) ? toSend : available;
+					sendcount = (sendcount > UDP_PACKET_SIZE) ? UDP_PACKET_SIZE : sendcount;
 
-					char* pTsData = (char*)&tsData;
+					available -= sendcount;
+
 					while ((sendcount > 0) && (have_Streamclient == true) &&
 					   (!close_Streamclient_request))
 					{
-						if (((written=m_StreamClient.Write(pTsData, sendcount)) < 0) && 
+						if (((written=m_StreamClient.Write(&buffer[done], sendcount)) < 0) && 
 							(errno != EAGAIN)) 
 						{
 							isyslog("[ffnetdev] Streamer: Couldn't send data: %d %s Len:%d\n", errno, strerror(errno), sendcount);
@@ -404,21 +378,16 @@ void cTSWorker::ActionUDP(void)
 						
 						if (written > 0)
 						{
+							done += written;
 							sendcount -= written;
-							pTsData   += written;
 							toSend	  -= written;
+							if (toSend == 0)
+								oldPacketTime = get_time();
 						}
 						else
 						{
 							cCondWait::SleepMs(5);
 						}
-					}
-
-					if (sendcount == 0)
-					{
-						tsData.packsCount = 0;
-						tsData.tsHeaderCRC = 0;
-						tsData.packNr ++;
 					}
 				}
 				m_StreamDevice->Del(count);
@@ -432,10 +401,10 @@ void cTSWorker::ActionUDP(void)
 				}
 					
 				bytessend += count;
-				if (curtime.tv_sec > oldtime.tv_sec + 10)
+				if (curtime.tv_sec > oldtime.tv_sec + 3)
 				{
-					double secs = (curtime.tv_sec * 1000 + (curtime.tv_usec / 1000)) / 1000 
-						- (oldtime.tv_sec * 1000 + (oldtime.tv_usec / 1000)) / 1000;
+					double secs = (curtime.tv_sec * 1000 + ((double)curtime.tv_usec / 1000.0)) / 1000 
+						- (oldtime.tv_sec * 1000 + (oldtime.tv_usec / 1000.0)) / 1000;
 					double rate = (double)((bytessend - oldbytessend) / secs) * 8 / 1024 / 1024;
 #ifdef DEBUG
 					fprintf(stderr, "[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send\n",

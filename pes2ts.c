@@ -13,26 +13,44 @@
 
 #include "pes2ts.h"
 
-cPES2TSRemux::cPES2TSRemux(int VPid, int APid):
+//////////////////////////////////////////////////////////////////////////////
+cPESRemux::cPESRemux(int inputBufferSize, int outputBufferSize): 
+   m_InputBuffer(new cRingBufferLinear(inputBufferSize, outputBufferSize))
+{
+   OutputLocked = false;
+   m_InputBuffer->SetTimeouts(0, 1000);  // IMPORTANT to avoid busy wait in threads main loop and thus a high CPU load
+}
+
+cPESRemux::~cPESRemux()
+{
+   delete m_InputBuffer;
+}
+
+int cPESRemux::Put(const uchar *Data, int Count)
+{
+  InputMutex.Lock();
+  int result = m_InputBuffer->Put(Data, Count);
+  InputMutex.Unlock();
+  return ( result);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+cPES2TSRemux::cPES2TSRemux(int VPid, int APid): cPESRemux(INPUTBUFSIZE, IPACKS),
     cThread("[ffnetdev] PES2TS remux"),
     m_OutputBuffer(new cRingBufferLinear(OUTPUTBUFSIZE, TS_SIZE * 2)),
-    m_InputBuffer(new cRingBufferLinear(INPUTBUFSIZE, IPACKS)),
     m_Active(false),
     m_PlayModeChanged(false)
 {
   vpid = VPid;
   apid = APid;
-  m_InputBuffer->SetTimeouts(0, 1000);  // IMPORTANT to avoid busy wait in threads main loop and thus a high CPU load
   Start();
-  OutputLocked = false;
 }
 
 cPES2TSRemux::~cPES2TSRemux()
 {
   m_Active = false;
-  delete m_InputBuffer;
   delete m_OutputBuffer;
-
 }
 
 void cPES2TSRemux::Action(void)
@@ -57,8 +75,8 @@ void cPES2TSRemux::Action(void)
 
     if (m_PlayModeChanged)
     {
-	cCondWait::SleepMs(1500);
-	m_PlayModeChanged = false;
+	   cCondWait::SleepMs(1500);
+	   m_PlayModeChanged = false;
     }
 
     if (m_InputBuffer->Available() < (int)IPACKS*10) {	
@@ -199,12 +217,11 @@ void cPES2TSRemux::Action(void)
 }
 
 
-int cPES2TSRemux::Put(const uchar *Data, int Count)
+//////////////////////////////////////////////////////////////////////////////
+cPES2PESRemux::cPES2PESRemux(): cPESRemux(INPUTBUFSIZE + OUTPUTBUFSIZE, IPACKS)
 {
-  InputMutex.Lock();
-  int result = m_InputBuffer->Put(Data, Count);
-  InputMutex.Unlock();
-  return ( result);
 }
 
-
+cPES2PESRemux::~cPES2PESRemux()
+{
+}

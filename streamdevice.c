@@ -12,103 +12,97 @@
 
 cStreamDevice::cStreamDevice(void)
 {
-#ifdef DEBUG
-    fprintf(stderr,"[ffnetdev] Device: Constructor cStreamDevice \n");
-#endif
-    m_Remux = new cPES2TSRemux(TS_VPID, TS_APID);   
-
+    dsyslog("[ffnetdev] Device: Constructor cStreamDevice \n");
+    //m_Remux = new cPES2TSRemux(TS_VPID, TS_APID);   
+    m_Remux = new cPES2PESRemux();   
 }
 
 cStreamDevice::~cStreamDevice(void)
 {
-#ifdef DEBUG    
-    fprintf(stderr,"[ffnetdev] Device: Destructor cStreamDevice \n");
-#endif
-    DELETENULL(m_Remux);
+   dsyslog("[ffnetdev] Device: Destructor cStreamDevice \n");
+   DELETENULL(m_Remux);
 }
 
 
 void cStreamDevice::MakePrimaryDevice(bool On)
 {
-#ifdef DEBUG
-  fprintf(stderr,"[ffnetdev] Device: ffnetdev becomes primary device. Registering our OSD provider...\n");
-#endif
+  dsyslog("[ffnetdev] Device: ffnetdev becomes primary device. Registering our OSD provider...\n");
   new cNetOSDProvider();
 }
 
 int cStreamDevice::ProvidesCa(const cChannel *Channel) const
 {
-    return 0;
+   return 0;
 }
 
 bool cStreamDevice::HasDecoder(void) const
 {
-    return true; // We can decode MPEG2
+   return true; // We can decode MPEG2
 }
 
 bool cStreamDevice::CanReplay(void) const
 {
-    return true;  // We can replay
+   return true;  // We can replay
 }
 
 bool cStreamDevice::SetPlayMode(ePlayMode PlayMode)
 {
-    fprintf(stderr, "[ffnetdev] Device: Setting playmode(not implemented). Mode: %d\n",PlayMode);
-    cOSDWorker::SendPlayMode(PlayMode);
-    m_Remux->ClearInput();
-    m_Remux->ClearOutput();
-    m_Remux->PlayModeChange();
-    return true;
+   dsyslog("[ffnetdev] Device: Setting playmode. Mode: %d\n",PlayMode);
+   cOSDWorker::SendPlayMode(PlayMode);
+   m_Remux->ClearInput();
+   m_Remux->ClearOutput();
+   m_Remux->PlayModeChange();
+   return true;
 }
 
 void cStreamDevice::TrickSpeed(int Speed)
 {
-    fprintf(stderr,"[ffnetdev] Device: Trickspeed(not implemented). Speed: %d\n", Speed);
-    m_Remux->ClearInput();
-    m_Remux->ClearOutput();
-    m_Remux->PlayModeChange();
+   dsyslog("[ffnetdev] Device: Trickspeed(not implemented). Speed: %d\n", Speed);
+   m_Remux->ClearInput();
+   m_Remux->ClearOutput();
+   m_Remux->PlayModeChange();
 }
 
 void cStreamDevice::Clear(void)
 {
-    fprintf(stderr,"[ffnetdev] Device: Clear(not implemented).\n");
-    m_Remux->ClearInput();
-    m_Remux->ClearOutput();
-    m_Remux->PlayModeChange();
+   dsyslog("[ffnetdev] Device: Clear(not implemented).\n");
+   m_Remux->ClearInput();
+   m_Remux->ClearOutput();
+   m_Remux->PlayModeChange();
 //    cDevice::Clear();
 }
 void cStreamDevice::Play(void)
 {
-    fprintf(stderr,"[ffnetdev] Device: Play(not implemented).\n");
+   dsyslog("[ffnetdev] Device: Play(not implemented).\n");
 //    cDevice::Play();
 }
 
 void cStreamDevice::Freeze(void)
 {
-    fprintf(stderr,"[ffnetdev] Device: Freeze(not implemented).\n");
+    dsyslog("[ffnetdev] Device: Freeze(not implemented).\n");
 //    cDevice::Freeze();
 }
 
 void cStreamDevice::Mute(void)
 {
-    fprintf(stderr,"[ffnetdev] Device: Mute(not implemented).\n");
+   dsyslog("[ffnetdev] Device: Mute(not implemented).\n");
 //    cDevice::Mute();
 }
 
 void cStreamDevice::SetVolumeDevice(int Volume)
 {
-  fprintf (stderr, "[ffnetdev] Device: Setting volume to %d (not implemented).\n", Volume);
+  dsyslog("[ffnetdev] Device: Setting volume to %d (not implemented).\n", Volume);
 }
 
 void cStreamDevice::StillPicture(const uchar *Data, int Length)
 {
-    fprintf(stderr,"[ffnetdev] Device: StillPicture(not implemented).\n");
+   dsyslog("[ffnetdev] Device: StillPicture(not implemented).\n");
 }
 
 bool cStreamDevice::Poll(cPoller &Poller, int TimeoutMs)
 {
-  //fprintf(stderr,"[ffnetdev] Device: Poll TimeoutMs: %d ....\n",TimeoutMs);
-  return true;
+   //dsyslog("[ffnetdev] Device: Poll TimeoutMs: %d ....\n",TimeoutMs);
+   return true;
 }
 /* ----------------------------------------------------------------------------
  */
@@ -120,7 +114,7 @@ int cStreamDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
 {
    if (cTSWorker::HaveStreamClient()) 
    {
-       while ((m_Remux->Free() < Length) && cTSWorker::HaveStreamClient())
+       while ((m_Remux->InputFree() < Length) && cTSWorker::HaveStreamClient())
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {
@@ -150,7 +144,7 @@ int cStreamDevice::PlayVideo(const uchar *Data, int Length)
    if (cTSWorker::HaveStreamClient()) 
    {
 
-       while ((m_Remux->Free() < Length) && cTSWorker::HaveStreamClient())
+       while ((m_Remux->InputFree() < Length) && cTSWorker::HaveStreamClient())
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {

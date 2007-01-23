@@ -18,6 +18,7 @@
 class cStreamDevice: public cDevice {
 private:
 	  cPESRemux *m_Remux;
+	  bool       m_Playing;
 protected:
 public:
   cStreamDevice(void);

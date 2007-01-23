@@ -17,6 +17,7 @@
 #include "streamdevice.h"
 #include "remote.h"
 #include "osdworker.h"
+#include "clientcontrol.h"
 #include "config.h"
 #include "ffnetdevsetup.h"
 
@@ -57,6 +58,7 @@ cPluginFFNetDev::cPluginFFNetDev(void)
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
   TSPort = STREAMPORT;
   OSDPort = OSDPORT;
+  ControlPort = CONTROLPORT;
   EnableRemote = false;
   m_origPrimaryDevice = -1;
   m_Remote = NULL;
@@ -68,6 +70,7 @@ cPluginFFNetDev::~cPluginFFNetDev()
 {
   cOSDWorker::Exit();
   cTSWorker::Exit();
+  cClientControl::Exit();
   
   delete m_Remote;
 }
@@ -78,6 +81,7 @@ const char *cPluginFFNetDev::CommandLineHelp(void)
   return 
   "  -t PORT, --tsport PORT      port number for sending TS to.\n"
   "  -o PORT, --osdport PORT     listen on this port for OSD connect.\n"
+  "  -c PORT, --controlport PORT listen on this port for ClientControl connect.\n"
   "  -e 			 enable remote control over OSD connection.\n"
   "\n";
 }
@@ -89,12 +93,13 @@ bool cPluginFFNetDev::ProcessArgs(int argc, char *argv[])
   static struct option long_options[] = {
       { "tsport",    		required_argument	, NULL, 't' },
       { "osdport",   		required_argument	, NULL, 'o' },
+      { "controlport",   	required_argument	, NULL, 'c' },
       { "enable-remote",   	no_argument		, NULL, 'e' },
       { NULL, 			0			, NULL, 0 }
   };
 
   int c;
-  while ((c = getopt_long(argc, argv, "t:o:e", long_options, NULL)) != -1) {
+  while ((c = getopt_long(argc, argv, "t:o:c:e", long_options, NULL)) != -1) {
         switch (c) {
           case 'e': EnableRemote = true;
 		    dsyslog("[ffnetdev] Remote enabled\n");
@@ -121,6 +126,17 @@ bool cPluginFFNetDev::ProcessArgs(int argc, char *argv[])
                     esyslog("[ffnetdev] invalid port number: %s\n", optarg);
                     return 2;
                     break;
+          case 'c': if (isnumber(optarg)) {
+                       int n = atoi(optarg);
+                       if (0 < n && n < 65536) {
+                          ControlPort = n;
+                          dsyslog("[ffnetdev] ClientControl Port: %d\n", n);
+                          break;
+                       }
+                    }
+                    esyslog("[ffnetdev] invalid port number: %s\n", optarg);
+                    return 2;
+                    break;
 	  default : return 2;
 	}
   }
@@ -131,14 +147,14 @@ bool cPluginFFNetDev::ProcessArgs(int argc, char *argv[])
 #if VDRVERSNUM >= 10347
 cString cPluginFFNetDev::Active(void) {
 
-    if(cOSDWorker::Active() || cTSWorker::Active())
+    if(cOSDWorker::Active() || cTSWorker::Active() || cClientControl::Active())
            return tr("ffnetdev is running");
  
     return NULL;
 }
 #else
 bool cPluginFFNetDev::Active(void) {
-    return (cOSDWorker::Active() || cTSWorker::Active());
+    return (cOSDWorker::Active() || cTSWorker::Active() || cClientControl::Active());
 }
 #endif
 
@@ -150,6 +166,7 @@ bool cPluginFFNetDev::Start(void)
   	  
   cOSDWorker::Init(OSDPort, this);
   cTSWorker::Init(m_StreamDevice, TSPort, this);
+  cClientControl::Init(ControlPort, this);
  
   return true;
 }

@@ -9,12 +9,14 @@
 #include "osdworker.h"
 #include "tsworker.h"
 #include "netosd.h"
+#include "vdr/player.h"
 
 cStreamDevice::cStreamDevice(void)
 {
     dsyslog("[ffnetdev] Device: Constructor cStreamDevice \n");
     //m_Remux = new cPES2TSRemux(TS_VPID, TS_APID);   
-    m_Remux = new cPES2PESRemux();   
+    m_Remux = new cPES2PESRemux();  
+    m_Playing = false; 
 }
 
 cStreamDevice::~cStreamDevice(void)
@@ -52,6 +54,17 @@ bool cStreamDevice::SetPlayMode(ePlayMode PlayMode)
    m_Remux->ClearInput();
    m_Remux->ClearOutput();
    m_Remux->PlayModeChange();
+   cControl *pControl = cControl::Control();
+   if (pControl)
+   {
+      bool Forward;
+      int Speed;
+      pControl->GetReplayMode(m_Playing, Forward, Speed);
+   }
+   else
+   {
+      m_Playing = false;
+   }
    return true;
 }
 
@@ -114,7 +127,8 @@ int cStreamDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
 {
    if (cTSWorker::HaveStreamClient()) 
    {
-       while ((m_Remux->InputFree() < Length) && cTSWorker::HaveStreamClient())
+       while (((m_Remux->InputFree() < Length) && (!m_Playing) ||
+               (m_Remux->Available() > TCP_SEND_SIZE * 10) && (m_Playing)) && cTSWorker::HaveStreamClient())
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {
@@ -144,7 +158,8 @@ int cStreamDevice::PlayVideo(const uchar *Data, int Length)
    if (cTSWorker::HaveStreamClient()) 
    {
 
-       while ((m_Remux->InputFree() < Length) && cTSWorker::HaveStreamClient())
+       while (((m_Remux->InputFree() < Length) && (!m_Playing) ||
+               (m_Remux->Available() > TCP_SEND_SIZE * 10) && (m_Playing)) && cTSWorker::HaveStreamClient())
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {

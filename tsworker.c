@@ -19,7 +19,6 @@
 #define UDP_PACKET_SIZE (TS_PACKET_SIZE * 7)
 #define UDP_MAX_BITRATE 8112832
 #define UDP_SEND_INTERVALL 1000
-#define TCP_SEND_SIZE (1024 * 10)
 
 // 8388608 = 8MBit
 struct TSData
@@ -101,12 +100,12 @@ void cTSWorker::ActionTCP(void) {
 	m_Active		= true;
 	have_Streamclient	= false;
 
-        if (!m_StreamListen.Listen(m_ListenIp, m_StreamListenPort, 1)) { // ToDo JN place to allow more connections/clients!
+   if (!m_StreamListen.Listen(m_ListenIp, m_StreamListenPort, 1)) { // ToDo JN place to allow more connections/clients!
 		esyslog("[ffnetdev] Streamer: Couldn't listen %s:%d: %s", m_ListenIp, m_StreamListenPort, strerror(errno));
 		m_Active = false;
 	} 
 	else
-	        isyslog("[ffnetdev] Streamer: Listening on port %d", m_StreamListenPort);
+      isyslog("[ffnetdev] Streamer: Listening on port %d", m_StreamListenPort);
 
 	while (m_Active) {
 		select.Clear();

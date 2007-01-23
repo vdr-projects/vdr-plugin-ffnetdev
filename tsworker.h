@@ -18,6 +18,8 @@
 
 typedef unsigned long long u64;
 
+#define TCP_SEND_SIZE (1024 * 20)
+
 
 // --- cTSWorker -------------------------------------------------------------
 

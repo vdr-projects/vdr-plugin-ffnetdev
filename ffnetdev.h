@@ -13,6 +13,7 @@
 
 #define OSDPORT 20001
 #define STREAMPORT 20002
+#define CONTROLPORT 20005
 
 class cPluginFFNetDev : public cPlugin {
 private:
@@ -23,8 +24,9 @@ private:
 	cMyRemote *m_Remote;
 	int OSDPort;
 	int TSPort;
+	int ControlPort;
 	bool EnableRemote;
-	int  m_origPrimaryDevice;
+	int  m_origPrimaryDevice;	
 	
 public:
   cPluginFFNetDev(void);

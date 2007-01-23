@@ -9,7 +9,7 @@
 #include <fcntl.h>
 
 #define UDP_TX_BUF_SIZE (188*348)
-//#define TCP_TX_BUF_SIZE (1024 * 30)
+//#define TCP_TX_BUF_SIZE (1024 * 60)
 
 cTBSocket::cTBSocket(int Type) {
 	memset(&m_LocalAddr, 0, sizeof(m_LocalAddr));

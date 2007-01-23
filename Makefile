@@ -53,8 +53,8 @@ COMMONOBJS = i18n.o \
 
 SERVEROBJS = $(PLUGIN).o \
 	\
-	ffnetdev.o ffnetdevsetup.o osdworker.o tsworker.o netosd.o streamdevice.o pes2ts.o remote.o \
-	vncEncodeRRE.o vncEncodeCoRRE.o vncEncodeHexT.o \
+	ffnetdev.o ffnetdevsetup.o osdworker.o tsworker.o clientcontrol.o netosd.o streamdevice.o \
+	pes2ts.o remote.o vncEncodeRRE.o vncEncodeCoRRE.o vncEncodeHexT.o \
 	vncEncoder.o translate.o \
 		
 ifdef DEBUG

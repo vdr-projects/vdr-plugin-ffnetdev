@@ -5,11 +5,12 @@
  *
  */
  
+#include "vdr/player.h"
 #include "streamdevice.h"
 #include "osdworker.h"
 #include "tsworker.h"
 #include "netosd.h"
-#include "vdr/player.h"
+#include "clientcontrol.h"
 
 cStreamDevice::cStreamDevice(void)
 {
@@ -17,6 +18,8 @@ cStreamDevice::cStreamDevice(void)
     //m_Remux = new cPES2TSRemux(TS_VPID, TS_APID);   
     m_Remux = new cPES2PESRemux();  
     m_Playing = false; 
+    m_PlayState = psPlay;
+    m_PlayMode  = pmNone;
 }
 
 cStreamDevice::~cStreamDevice(void)
@@ -51,42 +54,70 @@ bool cStreamDevice::SetPlayMode(ePlayMode PlayMode)
 {
    dsyslog("[ffnetdev] Device: Setting playmode. Mode: %d\n",PlayMode);
    cOSDWorker::SendPlayMode(PlayMode);
-   m_Remux->ClearInput();
-   m_Remux->ClearOutput();
-   m_Remux->PlayModeChange();
+      
+   m_PlayMode = PlayMode;
+   if (PlayMode == pmNone)
+   {
+      m_PlayState = psBufferReset;
+      m_Remux->ClearInput();
+      m_Remux->ClearOutput();
+   }
+   else
+   {
+      while (((m_PlayState == psBufferReset) || (m_PlayState == psBufferReseted)) && 
+             (!cClientControl::PlayStateReq()) && (cTSWorker::HaveStreamClient()))
+         cCondWait::SleepMs(10);
+      dsyslog("[ffnetdev] PlayStateReq\n");   
+      m_PlayState = psPlay;
+   }
+   
    cControl *pControl = cControl::Control();
    if (pControl)
    {
       bool Forward;
       int Speed;
       pControl->GetReplayMode(m_Playing, Forward, Speed);
+      cClientControl::SendPlayState(PlayMode, m_Playing, Forward, Speed);
    }
    else
    {
       m_Playing = false;
+      cClientControl::SendPlayState(PlayMode, false, false, 0);
    }
    return true;
 }
 
 void cStreamDevice::TrickSpeed(int Speed)
 {
-   dsyslog("[ffnetdev] Device: Trickspeed(not implemented). Speed: %d\n", Speed);
-   m_Remux->ClearInput();
-   m_Remux->ClearOutput();
-   m_Remux->PlayModeChange();
+   dsyslog("[ffnetdev] Device: Trickspeed. Speed: %d\n", Speed);
+   cControl *pControl = cControl::Control();
+   if (pControl)
+   {
+      bool Forward;
+      int Speed;
+      pControl->GetReplayMode(m_Playing, Forward, Speed);
+      cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed);
+   }
 }
 
 void cStreamDevice::Clear(void)
 {
    dsyslog("[ffnetdev] Device: Clear(not implemented).\n");
-   m_Remux->ClearInput();
-   m_Remux->ClearOutput();
-   m_Remux->PlayModeChange();
 //    cDevice::Clear();
 }
 void cStreamDevice::Play(void)
 {
-   dsyslog("[ffnetdev] Device: Play(not implemented).\n");
+   dsyslog("[ffnetdev] Device: Play.\n");
+   
+   cControl *pControl = cControl::Control();
+   if (pControl)
+   {
+      bool Forward;
+      int Speed;
+      pControl->GetReplayMode(m_Playing, Forward, Speed);
+      cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed);
+   }
+   
 //    cDevice::Play();
 }
 

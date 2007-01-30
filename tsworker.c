@@ -172,18 +172,30 @@ void cTSWorker::ActionTCP(void) {
 						 m_StreamClient->RemoteIp().c_str(), m_StreamClient->RemotePort());
 				}
 				else
-					{
+			   {
 #ifdef DEBUG
 					   fprintf(stderr, "[ffnetdev] Streamer: Error closing client socket.\n");
 #endif
 					   esyslog("[ffnetdev] Streamer: Error closing connection.");
 					   m_Active=false;
 					   continue;
-					} 
-					  
+				} 	  
 			}
 			
 			if ( select.CanWrite(*m_StreamClient) ) {
+			   
+			   if (m_StreamDevice->GetPlayState() == psBufferReset)
+			   {
+			      cCondWait::SleepMs(10);
+			      m_StreamDevice->SetPlayState(psBufferReseted);
+			   }
+			   
+			   if (m_StreamDevice->GetPlayState() == psBufferReseted)
+			   {
+			      cCondWait::SleepMs(10);
+			      continue;
+		      }
+			   
 				int count=0;
 				
 				m_StreamDevice->LockOutput();
@@ -328,6 +340,7 @@ void cTSWorker::ActionUDP(void)
 				} 
 					  
 			}
+			
 			
 			int count=0;
 			

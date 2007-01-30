@@ -40,8 +40,6 @@ public:
    virtual void ClearOutput() = 0;
    void LockOutput()   { while (OutputLocked) cCondWait::SleepMs(1); OutputLocked = true; }
    void UnlockOutput() { OutputLocked = false; }
-	virtual void PlayModeChange() {}; 
-   
 };
 
 class cPES2TSRemux: public cPESRemux, cThread {
@@ -50,7 +48,6 @@ private:
 	bool               m_Active;
 	unsigned short	   vpid;
 	unsigned short	   apid;
-	bool 		   m_PlayModeChanged;
   
 protected:
 	virtual void Action(void);
@@ -65,8 +62,6 @@ public:
 	uchar *Get(int &Count) { return  m_OutputBuffer->Get(Count); }
 	void DelOutput(int Count) { m_OutputBuffer->Del(Count); }
 	void ClearOutput() { LockOutput(); m_OutputBuffer->Clear(); UnlockOutput(); }
-	void PlayModeChange() { m_PlayModeChanged = true; } 
-	
 };
 
 class cPES2PESRemux: public cPESRemux {

@@ -211,60 +211,82 @@ bool cPluginFFNetDev::SetupParse(const char *Name, const char *Value)
 
 void cPluginFFNetDev::SetPrimaryDevice()
 {	
-    int i = 0;
-    while ((cOsd::IsOpen() > 0) && (i-- > 0))
-	cRemote::Put(kBack);
-	
-    if ((config.iAutoSetPrimaryDVB == 1) && (m_origPrimaryDevice == -1))
-    {
-        cDevice *PrimaryDevice;
-        if ((PrimaryDevice = cDevice::PrimaryDevice()) != NULL)
-    	    m_origPrimaryDevice = PrimaryDevice->DeviceNumber() + 1;
-	else
-	    m_origPrimaryDevice = -1;
-	    
-	if (m_StreamDevice->DeviceNumber() + 1 != m_origPrimaryDevice)
-	{
-	    cDevice::SetPrimaryDevice(m_StreamDevice->DeviceNumber() + 1);
-	    isyslog("[ffnetdev] set Primary Device to %d", m_StreamDevice->DeviceNumber() + 1);
-	}
-	else
-	{
-	    m_origPrimaryDevice = -1;
-	}
-    }
-    
-    if(EnableRemote) 
-    {
-	if (m_Remote == NULL)
-	    m_Remote = new cMyRemote("ffnetdev");
-	    
-	if (!cRemote::HasKeys())
-	    new cLearningThread();
-	dsyslog("[ffnetdev] remote control enabled.\n");
-    }
-    else 
-    {
-	dsyslog("[ffnetdev] remote control disabled.\n");
-    }
+   int i = 0;
+   while ((cOsd::IsOpen() > 0) && (i-- > 0))
+   cRemote::Put(kBack);
+   
+   if ((config.iAutoSetPrimaryDVB == 1) && (m_origPrimaryDevice == -1))
+   {
+      cDevice *PrimaryDevice;
+      if ((PrimaryDevice = cDevice::PrimaryDevice()) != NULL)
+         m_origPrimaryDevice = PrimaryDevice->DeviceNumber() + 1;
+      else
+         m_origPrimaryDevice = -1;
+      
+      if (m_StreamDevice->DeviceNumber() + 1 != m_origPrimaryDevice)
+      {
+         cDevice::SetPrimaryDevice(m_StreamDevice->DeviceNumber() + 1);
+         isyslog("[ffnetdev] set Primary Device to %d", m_StreamDevice->DeviceNumber() + 1);
+      }
+      else
+      {
+         m_origPrimaryDevice = -1;
+      }
+   }
+   
+   if(EnableRemote) 
+   {
+      if (m_Remote == NULL)
+      {
+         char str[30];
+         if (strlen(m_ClientName) > 0)
+            sprintf(str, "ffnetdev-%s", m_ClientName);
+         else
+            strcpy(str, "ffnetdev");
+         
+         m_Remote = new cMyRemote(str);
+      }
+   
+      if (!cRemote::HasKeys())
+         new cLearningThread();
+      dsyslog("[ffnetdev] remote control enabled.\n");
+   }
+   else 
+   {
+      dsyslog("[ffnetdev] remote control disabled.\n");
+   }
 }
 
 
 void cPluginFFNetDev::RestorePrimaryDevice()
 {
-    int i = 10;
-    while ((cOsd::IsOpen() > 0) && (i-- > 0))
-	cRemote::Put(kBack);
+   int i = 10;
+   while ((cOsd::IsOpen() > 0) && (i-- > 0))
+      cRemote::Put(kBack);
+   
+   dsyslog("[ffnetdev] remote control disabled.\n");
+   
+   if (m_origPrimaryDevice != -1)
+   {
+      cDevice::SetPrimaryDevice(m_origPrimaryDevice);
+      isyslog("[ffnetdev] restore Primary Device to %d", m_origPrimaryDevice);
+      m_origPrimaryDevice = -1;
+      sleep(5);
+   }					
+   
+   m_ClientName[0] = '\0';
+   if (m_Remote)
+   {
+      Remotes.Del(m_Remote);
+      m_Remote = NULL;
+   }
+   dsyslog("[ffnetdev] -------------------\n");
+}
 
-    dsyslog("[ffnetdev] remote control disabled.\n");
-    
-    if (m_origPrimaryDevice != -1)
-    {
-        cDevice::SetPrimaryDevice(m_origPrimaryDevice);
-        isyslog("[ffnetdev] restore Primary Device to %d", m_origPrimaryDevice);
-        m_origPrimaryDevice = -1;
-        sleep(5);
-    }					
+void cPluginFFNetDev::SetClientName(char* ClientName)
+{
+   strcpy(m_ClientName, ClientName);
+   dsyslog("[ffnetdev] SetClientname %s", m_ClientName);
 }
 
 

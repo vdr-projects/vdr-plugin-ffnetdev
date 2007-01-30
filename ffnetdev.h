@@ -27,6 +27,7 @@ private:
 	int ControlPort;
 	bool EnableRemote;
 	int  m_origPrimaryDevice;	
+	char m_ClientName[20];
 	
 public:
   cPluginFFNetDev(void);
@@ -57,6 +58,7 @@ public:
   void SetPrimaryDevice();
   void RestorePrimaryDevice();
   cMyRemote *GetRemote() { return m_Remote; }
+  void SetClientName(char* ClientName);
 };
 
 #endif

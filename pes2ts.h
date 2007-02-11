@@ -16,7 +16,8 @@
 #define TS_SIZE         188
 #define IPACKS		2048
 
-class cPESRemux {
+class cPESRemux 
+{
 private:
    bool  	   	   OutputLocked;
    
@@ -25,7 +26,7 @@ protected:
    cMutex  	         InputMutex;
 
 public:
-   cPESRemux(int inputBufferSize, int outputBufferSize);
+   cPESRemux(int inputBufferSize);
 	virtual ~cPESRemux();
 	
    int Put(const uchar *Data, int Count);
@@ -33,6 +34,7 @@ public:
    void ClearInput () { InputMutex.Lock(); m_InputBuffer ->Clear(); InputMutex.Unlock(); }
    
    virtual int Available(void) = 0;
+   virtual int Fill(void) = 0;
    virtual int Free(void) = 0;
    virtual int InputFree(void) = 0;
    virtual uchar *Get(int &Count) = 0;
@@ -42,7 +44,8 @@ public:
    void UnlockOutput() { OutputLocked = false; }
 };
 
-class cPES2TSRemux: public cPESRemux, cThread {
+class cPES2TSRemux: public cPESRemux, cThread 
+{
 private:
 	cRingBufferLinear *m_OutputBuffer;
 	bool               m_Active;
@@ -57,6 +60,7 @@ public:
 	virtual ~cPES2TSRemux();
 
    int Available(void) { return m_OutputBuffer->Available(); }
+   int Fill(void) { return m_InputBuffer->Available() + m_OutputBuffer->Available(); }
 	int Free(void) { return m_OutputBuffer->Free(); }
 	int InputFree(void) { return m_InputBuffer->Free(); }
 	uchar *Get(int &Count) { return  m_OutputBuffer->Get(Count); }
@@ -64,18 +68,26 @@ public:
 	void ClearOutput() { LockOutput(); m_OutputBuffer->Clear(); UnlockOutput(); }
 };
 
-class cPES2PESRemux: public cPESRemux {
+class cPES2PESRemux: public cPESRemux, cThread 
+{
+private:
+	cRingBufferLinear *m_OutputBuffer;
+	bool               m_Active;
+	
+protected:
+	virtual void Action(void);
+	
 public:
 	cPES2PESRemux();
 	virtual ~cPES2PESRemux();
 
-   int Available(void) { return m_InputBuffer->Available(); }
-   int Free(void) { return m_InputBuffer->Free(); }
-   int InputFree(void) { return m_InputBuffer->Free(); }
-	uchar *Get(int &Count) { return  m_InputBuffer->Get(Count); }
-	void DelOutput(int Count) { m_InputBuffer->Del(Count); }
-	void ClearOutput() { LockOutput(); m_InputBuffer->Clear(); UnlockOutput(); } 
-	
+   int Available(void) { return m_OutputBuffer->Available(); }
+   int Fill(void) { return m_InputBuffer->Available() + m_OutputBuffer->Available(); }
+	int Free(void) { return m_OutputBuffer->Free(); }
+	int InputFree(void) { return m_InputBuffer->Free(); }
+	uchar *Get(int &Count) { return  m_OutputBuffer->Get(Count); }
+	void DelOutput(int Count) { m_OutputBuffer->Del(Count); }
+	void ClearOutput() { LockOutput(); m_OutputBuffer->Clear(); UnlockOutput(); }
 };
 
 #endif // PES2TSREMUX_H

@@ -166,6 +166,7 @@ void cClientControl::Action(void)
 			   
 			   if ( (ret = m_ClientSocket->Read(&data, sizeof(data))) == sizeof(data)) 
 			   {
+			      dsyslog("pakType %d, dataLen %d", data.pakType, data.dataLen);
 			      switch (data.pakType)
 			      {
 			      case ptInfo: 
@@ -201,8 +202,6 @@ bool cClientControl::SendPlayState(ePlayMode PlayMode, bool bPlay, bool bForward
    SClientControl data;
    SClientControlPlayState state;
        
-   int ret;
-   
    if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL))
       return false;
 
@@ -215,12 +214,56 @@ bool cClientControl::SendPlayState(ePlayMode PlayMode, bool bPlay, bool bForward
    
    data.pakType = ptPlayState;
    data.dataLen = sizeof(state);
-   if ((ret = m_Instance->m_ClientSocket->Write(&data, sizeof(data))) == sizeof(data))
+   dsyslog("dataLen %d, dataSize %d", data.dataLen, sizeof(data));
+   if (m_Instance->m_ClientSocket->Write(&data, sizeof(data)) == sizeof(data))
    {
-      if ((ret = m_Instance->m_ClientSocket->Write(&state, sizeof(state))) == sizeof(state))
+      if (m_Instance->m_ClientSocket->Write(&state, sizeof(state)) == sizeof(state))
          return true;
       else
          return false;
+   }
+   else
+      return false;
+}
+
+
+bool cClientControl::SendStillPicture(const uchar *Data, int Length) 
+{
+   SClientControl data;
+   int written, available, done;
+  
+   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL))
+      return false;
+  
+   data.pakType = ptStillPicture;
+   data.dataLen = Length;
+   if (m_Instance->m_ClientSocket->Write(&data, sizeof(data)) == sizeof(data))
+   {
+      available = Length;
+      done = 0;
+      while ((available > 0) && (m_Instance->m_bHaveClient) &&
+			    (!m_Instance->m_bCloseClientRequest))
+      {
+      
+         if (((written=m_Instance->m_ClientSocket->Write(Data + done, available)) < 0) && 
+             (errno != EAGAIN)) 
+         {
+            CloseStreamClient();
+            return false;
+         }
+         
+         if (written > 0)
+         {
+            available -= written;
+            done      += written;
+         }
+         else
+         {
+            cCondWait::SleepMs(5);
+         }
+      }
+      
+      return true;
    }
    else
       return false;

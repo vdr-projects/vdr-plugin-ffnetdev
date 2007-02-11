@@ -238,6 +238,10 @@ void cPluginFFNetDev::SetPrimaryDevice()
    {
       if (m_Remote == NULL)
       {
+         i = 0;
+         while ((strlen(m_ClientName) == 0) && (i++ < 2))
+            sleep(1);
+            
          char str[30];
          if (strlen(m_ClientName) > 0)
             sprintf(str, "ffnetdev-%s", m_ClientName);
@@ -280,7 +284,6 @@ void cPluginFFNetDev::RestorePrimaryDevice()
       Remotes.Del(m_Remote);
       m_Remote = NULL;
    }
-   dsyslog("[ffnetdev] -------------------\n");
 }
 
 void cPluginFFNetDev::SetClientName(char* ClientName)

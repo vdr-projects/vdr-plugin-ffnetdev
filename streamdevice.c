@@ -25,6 +25,7 @@ cStreamDevice::cStreamDevice(void)
 cStreamDevice::~cStreamDevice(void)
 {
    dsyslog("[ffnetdev] Device: Destructor cStreamDevice \n");
+   m_PlayState = psPlay;
    DELETENULL(m_Remux);
 }
 
@@ -77,12 +78,14 @@ bool cStreamDevice::SetPlayMode(ePlayMode PlayMode)
       bool Forward;
       int Speed;
       pControl->GetReplayMode(m_Playing, Forward, Speed);
-      cClientControl::SendPlayState(PlayMode, m_Playing, Forward, Speed);
+      if (!cClientControl::SendPlayState(PlayMode, m_Playing, Forward, Speed))
+         m_PlayState = psPlay;
    }
    else
    {
       m_Playing = false;
-      cClientControl::SendPlayState(PlayMode, false, false, 0);
+      if (!cClientControl::SendPlayState(PlayMode, false, false, 0))
+         m_PlayState = psPlay;
    }
    return true;
 }
@@ -96,7 +99,8 @@ void cStreamDevice::TrickSpeed(int Speed)
       bool Forward;
       int Speed;
       pControl->GetReplayMode(m_Playing, Forward, Speed);
-      cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed);
+      if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed))
+         m_PlayState = psPlay;
    }
 }
 
@@ -115,7 +119,8 @@ void cStreamDevice::Play(void)
       bool Forward;
       int Speed;
       pControl->GetReplayMode(m_Playing, Forward, Speed);
-      cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed);
+      if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed))
+         m_PlayState = psPlay;
    }
    
 //    cDevice::Play();
@@ -140,7 +145,8 @@ void cStreamDevice::SetVolumeDevice(int Volume)
 
 void cStreamDevice::StillPicture(const uchar *Data, int Length)
 {
-   dsyslog("[ffnetdev] Device: StillPicture(not implemented).\n");
+   dsyslog("[ffnetdev] Device: StillPicture %d Bytes.\n", Length);
+   cClientControl::SendStillPicture(Data, Length);
 }
 
 bool cStreamDevice::Poll(cPoller &Poller, int TimeoutMs)
@@ -158,12 +164,14 @@ int cStreamDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
 {
    if (cTSWorker::HaveStreamClient()) 
    {
-       while (((m_Remux->InputFree() < Length) && (!m_Playing) ||
-               (m_Remux->Available() > TCP_SEND_SIZE * 10) && (m_Playing)) && cTSWorker::HaveStreamClient())
+       while ((((!m_Playing) && (m_Remux->InputFree() < Length)) || 
+               ((m_Playing) && ((m_Remux->InputFree() < Length) || 
+                                (m_Remux->Fill() > TCP_SEND_SIZE * 10)))) && 
+               (cTSWorker::HaveStreamClient()))
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {
-         fprintf(stderr,"[ffnetdev] Device: Did not put all in input buffer(audio). result:%d Length: %d Skipping Audio PES packet...\n", result, Length );
+         dsyslog("[ffnetdev] Device: Did not put all in input buffer(audio). result:%d Length: %d Skipping Audio PES packet...\n", result, Length );
          // Delete part of data already written to buffer 
          m_Remux->DelInput(result);
          return (0);
@@ -188,13 +196,14 @@ int cStreamDevice::PlayVideo(const uchar *Data, int Length)
 {
    if (cTSWorker::HaveStreamClient()) 
    {
-
-       while (((m_Remux->InputFree() < Length) && (!m_Playing) ||
-               (m_Remux->Available() > TCP_SEND_SIZE * 10) && (m_Playing)) && cTSWorker::HaveStreamClient())
+       while ((((!m_Playing) && (m_Remux->InputFree() < Length)) || 
+               ((m_Playing) && ((m_Remux->InputFree() < Length) || 
+                                (m_Remux->Fill() > TCP_SEND_SIZE * 10)))) && 
+               (cTSWorker::HaveStreamClient()))
            cCondWait::SleepMs(1);
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {
-         fprintf(stderr,"[ffnetdev] Device: Did not put all in input buffer(video). result:%d Length: %d Skipping Video PES packet...\n", result, Length );
+         dsyslog("[ffnetdev] Device: Did not put all in input buffer(video). result:%d Length: %d Skipping Video PES packet...\n", result, Length );
          // Delete part of data already written to buffer 
          m_Remux->DelInput(result);
          return (0);

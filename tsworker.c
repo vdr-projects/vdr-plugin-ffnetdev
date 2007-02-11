@@ -182,79 +182,76 @@ void cTSWorker::ActionTCP(void) {
 				} 	  
 			}
 			
-			if ( select.CanWrite(*m_StreamClient) ) {
-			   
+			if ( select.CanWrite(*m_StreamClient) ) 
+			{
 			   if (m_StreamDevice->GetPlayState() == psBufferReset)
 			   {
 			      cCondWait::SleepMs(10);
 			      m_StreamDevice->SetPlayState(psBufferReseted);
 			   }
 			   
-			   if (m_StreamDevice->GetPlayState() == psBufferReseted)
+			   if (m_StreamDevice->GetPlayState() == psPlay)
 			   {
-			      cCondWait::SleepMs(10);
-			      continue;
-		      }
-			   
-				int count=0;
-				
-				m_StreamDevice->LockOutput();
-      				uchar *buffer = m_StreamDevice->Get(count);
-				if (buffer!=NULL) {
-				   count = (count > TCP_SEND_SIZE) ? TCP_SEND_SIZE : count;
-					int available = count;
-					int done      = 0;
-					int written   = 0;
-					while ((available > 0) && (have_Streamclient == true) &&
-					       (!close_Streamclient_request))
-					{
-					
-					    if (((written=m_StreamClient->Write(&buffer[done], available)) < 0) && 
-						(errno != EAGAIN)) 
-					    {
-							CloseStreamClient();
-					    }
-					    
-					    if (written > 0)
-					    {
-							available -= written;
-							done      += written;
-					    }
-					    else
-					    {
-							cCondWait::SleepMs(5);
-					    }
-					}
-					m_StreamDevice->Del(count);
-
-					struct timeval curtime;
-					gettimeofday(&curtime, 0);
-					if (oldtime.tv_sec == 0)
-					{
-					    oldtime = curtime;
-					    bytessend    = 0;
-					    oldbytessend = 0;
-					}
-					
-					bytessend += count;
-					if (curtime.tv_sec > oldtime.tv_sec + 10)
-					{
-						double secs = (curtime.tv_sec * 1000 + (curtime.tv_usec / 1000.0)) / 1000 
-							- (oldtime.tv_sec * 1000 + (oldtime.tv_usec / 1000.0)) / 1000;
-						double rate = (double)((bytessend - oldbytessend) / secs) * 8 / 1024 / 1024;
-						int bufstat = m_StreamDevice->Available() * 100 / (m_StreamDevice->Available() + m_StreamDevice->Free()); 
-#ifdef DEBUG
-						fprintf(stderr, "[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
-							rate, bytessend - oldbytessend, bufstat);
-#endif						
-						dsyslog("[ffnetdev] Streamer: Rate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
-							rate, bytessend - oldbytessend, bufstat);
-						
-						oldbytessend = bytessend;
-						oldtime = curtime;
-					}
-				}
-				m_StreamDevice->UnlockOutput();
+   		      int count=0;
+   				
+   				m_StreamDevice->LockOutput();
+         				uchar *buffer = m_StreamDevice->Get(count);
+   				if (buffer!=NULL) {
+   				   count = (count > TCP_SEND_SIZE) ? TCP_SEND_SIZE : count;
+   					int available = count;
+   					int done      = 0;
+   					int written   = 0;
+   					while ((available > 0) && (have_Streamclient == true) &&
+   					       (!close_Streamclient_request))
+   					{
+   					
+   					    if (((written=m_StreamClient->Write(&buffer[done], available)) < 0) && 
+   						(errno != EAGAIN)) 
+   					    {
+   							CloseStreamClient();
+   					    }
+   					    
+   					    if (written > 0)
+   					    {
+   							available -= written;
+   							done      += written;
+   					    }
+   					    else
+   					    {
+   							cCondWait::SleepMs(5);
+   					    }
+   					}
+   					m_StreamDevice->Del(count);
+   
+   					struct timeval curtime;
+   					gettimeofday(&curtime, 0);
+   					if (oldtime.tv_sec == 0)
+   					{
+   					    oldtime = curtime;
+   					    bytessend    = 0;
+   					    oldbytessend = 0;
+   					}
+   					
+   					bytessend += count;
+   					if (curtime.tv_sec > oldtime.tv_sec + 10)
+   					{
+   						double secs = (curtime.tv_sec * 1000 + (curtime.tv_usec / 1000.0)) / 1000 
+   							- (oldtime.tv_sec * 1000 + (oldtime.tv_usec / 1000.0)) / 1000;
+   						double rate = (double)((bytessend - oldbytessend) / secs) * 8 / 1024 / 1024;
+   						int bufstat = m_StreamDevice->Available() * 100 / (m_StreamDevice->Available() + m_StreamDevice->Free()); 
+   #ifdef DEBUG
+   						fprintf(stderr, "[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
+   							rate, bytessend - oldbytessend, bufstat);
+   #endif						
+   						dsyslog("[ffnetdev] Streamer: Rate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
+   							rate, bytessend - oldbytessend, bufstat);
+   						
+   						oldbytessend = bytessend;
+   						oldtime = curtime;
+   					}
+   				}
+   				m_StreamDevice->UnlockOutput();
+   			}
 			}
 			
 			if ( select.CanRead(*m_StreamClient) )

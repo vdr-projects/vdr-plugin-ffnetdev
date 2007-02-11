@@ -14,8 +14,8 @@
 #include "pes2ts.h"
 
 //////////////////////////////////////////////////////////////////////////////
-cPESRemux::cPESRemux(int inputBufferSize, int outputBufferSize): 
-   m_InputBuffer(new cRingBufferLinear(inputBufferSize, outputBufferSize))
+cPESRemux::cPESRemux(int inputBufferSize): 
+   m_InputBuffer(new cRingBufferLinear(inputBufferSize, IPACKS))
 {
    OutputLocked = false;
    m_InputBuffer->SetTimeouts(0, 1000);  // IMPORTANT to avoid busy wait in threads main loop and thus a high CPU load
@@ -36,7 +36,7 @@ int cPESRemux::Put(const uchar *Data, int Count)
 
 
 //////////////////////////////////////////////////////////////////////////////
-cPES2TSRemux::cPES2TSRemux(int VPid, int APid): cPESRemux(INPUTBUFSIZE, IPACKS),
+cPES2TSRemux::cPES2TSRemux(int VPid, int APid): cPESRemux(INPUTBUFSIZE),
     cThread("[ffnetdev] PES2TS remux"),
     m_OutputBuffer(new cRingBufferLinear(OUTPUTBUFSIZE, TS_SIZE * 2)),
     m_Active(false)
@@ -96,10 +96,10 @@ void cPES2TSRemux::Action(void)
 //	    m_OutputBuffer->Available(), m_InputBuffer->Available());
 
     if ( count < (int)minNeededPacketlen )	{
-       fprintf(stderr, "[ffnetdev] Remuxer: not enought bytes for PacketLen-Analysis, have only: %d\n", count);
+       dsyslog("[ffnetdev] Remuxer: not enought bytes for PacketLen-Analysis, have only: %d\n", count);
        InputMutex.Unlock();
        cCondWait::SleepMs(2);
-      continue;
+     continue;
     }
 
     //DEBUG
@@ -115,12 +115,12 @@ void cPES2TSRemux::Action(void)
           packetlen = ((data[4]<<8) | data[5]) + 6 ;
     
           if ( packetlen>IPACKS) {
-              fprintf(stderr, "[ffnetdev] Remuxer: IPACKS changed? packet length was %d, maximum: %d\n"
+              dsyslog("[ffnetdev] Remuxer: IPACKS changed? packet length was %d, maximum: %d\n"
                       "This should not happen! Please report!\n", packetlen, IPACKS);
           }
 
 	  if ( count < (int)packetlen) {
-	       fprintf(stderr, "[ffnetdev] Remuxer: not enought bytes for whole packet, have only: %d but LenShoud be %d\n", count, packetlen);
+	       dsyslog("[ffnetdev] Remuxer: not enought bytes for whole packet, have only: %d but LenShoud be %d\n", count, packetlen);
 	       InputMutex.Unlock();
     	       cCondWait::SleepMs(1);
 	       continue;
@@ -138,7 +138,7 @@ void cPES2TSRemux::Action(void)
                   cc=&vcc;
               } 
               else {
-                  fprintf(stderr, "[ffnetdev] Remuxer: Unknown stream id: neither video nor audio type.\n");
+                  dsyslog("[ffnetdev] Remuxer: Unknown stream id: neither video nor audio type.\n");
                   // throw away whole PES packet
                   m_InputBuffer->Del(packetlen);
                   InputMutex.Unlock();
@@ -156,19 +156,20 @@ void cPES2TSRemux::Action(void)
       // no valid PES signature was found, so delete this stuff from ring buffer
       // normally we should always receive a whole PES packet, since VDR always gives us a whole packet and not less or more
       // with each call in streamdevice.c (PlayVideo, PlayAudio)
-      fprintf(stderr, "[ffnetdev] Remuxer: No valid PES signature found. This should not happen.\n");
+      dsyslog("[ffnetdev] Remuxer: No valid PES signature found. This should not happen.\n");
 
       m_InputBuffer->Del(1); // Probably it is better to delete 1 byte only to get in sync again!?
       InputMutex.Unlock();
       continue;
     } 
     
-    int tspacketlen = ((int)packetlen/184) * 188  + ((packetlen % 184 > 0) ? 188 : 0); 
-    while (m_OutputBuffer->Free() < tspacketlen) {	
-	if (!m_Active)
-    	    continue;
-	cCondWait::SleepMs(10);
-	//fprintf(stderr, "[ffnetdev] Remuxer: sleep %d %d\n", m_OutputBuffer->Free(), tspacketlen);
+    int tspacketlen = (packetlen/184) * 188  + ((packetlen % 184 > 0) ? 188 : 0); 
+    while (m_OutputBuffer->Free() < tspacketlen) 
+    {	
+      if (!m_Active)
+         continue;
+   	cCondWait::SleepMs(10);
+   	//dsyslog("[ffnetdev] Remuxer: sleep %d %d\n", m_OutputBuffer->Free(), tspacketlen);
     }
 
     LockOutput();
@@ -211,10 +212,132 @@ void cPES2TSRemux::Action(void)
 
 
 //////////////////////////////////////////////////////////////////////////////
-cPES2PESRemux::cPES2PESRemux(): cPESRemux(INPUTBUFSIZE + OUTPUTBUFSIZE, IPACKS)
+cPES2PESRemux::cPES2PESRemux(): cPESRemux(INPUTBUFSIZE),
+    cThread("[ffnetdev] PES2PES remux"),
+    m_OutputBuffer(new cRingBufferLinear(OUTPUTBUFSIZE, IPACKS)),
+    m_Active(false)
 {
+   m_OutputBuffer->SetTimeouts(0, 1000);
+   Start();
 }
 
 cPES2PESRemux::~cPES2PESRemux()
 {
+  m_Active = false;
+  delete m_OutputBuffer;
+}
+
+void cPES2PESRemux::Action(void)
+{
+   unsigned int packetlen;
+   unsigned int minNeededPacketlen = 10; // needed for read packet len: 6 Should be enought ... but makes no sense
+   
+   m_Active = true;
+   
+   while (m_Active) 
+   {
+      int count=0;
+      //    fprintf(stderr, "[ffnetdev] Remuxer: Inputbuffersize: %d, Outputbuffersize: %d\n", 
+      //	    m_InputBuffer->Available(), m_OutputBuffer->Available());
+      
+      if (m_InputBuffer->Available() < (int)IPACKS*10) 
+      {	
+         cCondWait::SleepMs(5);
+         continue;
+      }
+      
+      if (!cTSWorker::HaveStreamClient()) 
+      {
+         ClearOutput();
+         cCondWait::SleepMs(10);
+         continue;
+      }
+      
+      
+      InputMutex.Lock();
+      uchar *data = m_InputBuffer->Get(count);
+      if (data==NULL) 
+      {
+         InputMutex.Unlock();
+         cCondWait::SleepMs(3);
+         continue;
+      }
+      
+      if ( count < (int)minNeededPacketlen )	
+      {
+         dsyslog("[ffnetdev] Remuxer: not enought bytes for PacketLen-Analysis, have only: %d\n", count);
+         InputMutex.Unlock();
+         cCondWait::SleepMs(2);
+         continue;
+      }
+      
+      // check for valid PES signature in PES header
+      if ( (data[0]==0x00) && (data[1]==0x00) && (data[2]==0x01) ) 
+      {    
+         packetlen = ((data[4]<<8) | data[5]) + 6 ;
+         
+         if ( packetlen>IPACKS) {
+           dsyslog("[ffnetdev] Remuxer: IPACKS changed? packet length was %d, maximum: %d\n"
+                   "This should not happen! Please report!\n", packetlen, IPACKS);
+         }
+   
+         if ( count < (int)packetlen) 
+         {
+            dsyslog("[ffnetdev] Remuxer: not enought bytes for whole packet, have only: %d but LenShoud be %d\n", count, packetlen);
+            InputMutex.Unlock();
+            cCondWait::SleepMs(1);
+            continue;
+         }
+      
+      
+         // check for valid stream id type: is it video or audio or unknown?
+         if ( ((data[3]>=0xC0) && (data[3]<=0xDF)) || 
+              (data[3] == 0xBD) || 
+              ((data[3]>=0xE0) && (data[3]<=0xEF)))
+         {
+            while (m_OutputBuffer->Free() < (int)packetlen) 
+            {	
+               if (!m_Active)
+               continue;
+               cCondWait::SleepMs(10);
+               //dsyslog("[ffnetdev] Remuxer: sleep %d %d\n", m_OutputBuffer->Free(), tspacketlen);
+            }
+    
+            LockOutput();
+            m_OutputBuffer->Put(data, packetlen);
+            // we are now finished with the PES packet, delete it from ring buffer
+            m_InputBuffer->Del(packetlen); 
+            UnlockOutput();  
+         } 
+         else if (data[3]>=0xBE)
+         {
+            dsyslog("[ffnetdev] Remuxer: Padding stream removed.\n");
+            m_InputBuffer->Del(packetlen);
+            InputMutex.Unlock();
+            continue;
+         }
+         else 
+         {
+            dsyslog("[ffnetdev] Remuxer: Unknown stream id: neither video nor audio type.\n");
+            // throw away whole PES packet
+            m_InputBuffer->Del(packetlen);
+            InputMutex.Unlock();
+            continue;
+         }
+         
+         InputMutex.Unlock();
+      }
+      else 
+      {
+         // no valid PES signature was found, so delete this stuff from ring buffer
+         // normally we should always receive a whole PES packet, since VDR always gives us a whole packet and not less or more
+         // with each call in streamdevice.c (PlayVideo, PlayAudio)
+         dsyslog("[ffnetdev] Remuxer: No valid PES signature found. This should not happen.\n");
+         
+         m_InputBuffer->Del(1); // Probably it is better to delete 1 byte only to get in sync again!?
+         InputMutex.Unlock();
+         continue;
+      } 
+   }
+   m_Active = false;
 }

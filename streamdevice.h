@@ -21,6 +21,8 @@ class cStreamDevice: public cDevice {
 private:
    cPESRemux *m_Remux;
    bool       m_Playing;
+   bool       m_Forward;
+   int       m_Speed;
    ePlayState m_PlayState;
    ePlayMode  m_PlayMode;
    

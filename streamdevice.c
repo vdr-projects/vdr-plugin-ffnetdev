@@ -75,16 +75,18 @@ bool cStreamDevice::SetPlayMode(ePlayMode PlayMode)
    cControl *pControl = cControl::Control();
    if (pControl)
    {
-      bool Forward;
-      int Speed;
-      pControl->GetReplayMode(m_Playing, Forward, Speed);
-      if (!cClientControl::SendPlayState(PlayMode, m_Playing, Forward, Speed))
+      pControl->GetReplayMode(m_Playing, m_Forward, m_Speed);
+      if (m_Speed == -1)
+         m_Speed = 0;
+      if (!cClientControl::SendPlayState(PlayMode, m_Playing, m_Forward, m_Speed))
          m_PlayState = psPlay;
    }
    else
    {
       m_Playing = false;
-      if (!cClientControl::SendPlayState(PlayMode, false, false, 0))
+      m_Forward = true;
+      m_Speed = 0;
+      if (!cClientControl::SendPlayState(PlayMode, m_Playing, m_Forward, m_Speed))
          m_PlayState = psPlay;
    }
    return true;
@@ -93,15 +95,14 @@ bool cStreamDevice::SetPlayMode(ePlayMode PlayMode)
 void cStreamDevice::TrickSpeed(int Speed)
 {
    dsyslog("[ffnetdev] Device: Trickspeed. Speed: %d\n", Speed);
+     
    cControl *pControl = cControl::Control();
    if (pControl)
-   {
-      bool Forward;
-      int Speed;
-      pControl->GetReplayMode(m_Playing, Forward, Speed);
-      if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed))
-         m_PlayState = psPlay;
-   }
+      pControl->GetReplayMode(m_Playing, m_Forward, m_Speed);
+   
+   m_Speed = Speed;
+   if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, m_Forward, m_Speed))
+      m_PlayState = psPlay;
 }
 
 void cStreamDevice::Clear(void)
@@ -113,28 +114,34 @@ void cStreamDevice::Play(void)
 {
    dsyslog("[ffnetdev] Device: Play.\n");
    
-   cControl *pControl = cControl::Control();
-   if (pControl)
-   {
-      bool Forward;
-      int Speed;
-      pControl->GetReplayMode(m_Playing, Forward, Speed);
-      if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, Forward, Speed))
-         m_PlayState = psPlay;
-   }
-   
+   m_PlayMode = pmAudioVideo;
+   m_Playing = true;
+   m_Forward = true;
+   m_Speed = 0;
+   if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, m_Forward, m_Speed))
+      m_PlayState = psPlay;
+    
 //    cDevice::Play();
 }
 
 void cStreamDevice::Freeze(void)
 {
-    dsyslog("[ffnetdev] Device: Freeze(not implemented).\n");
+    dsyslog("[ffnetdev] Device: Freeze.\n");
+    
+    m_Playing = false;
+    cClientControl::SendSFreeze();
+      
 //    cDevice::Freeze();
 }
 
 void cStreamDevice::Mute(void)
 {
-   dsyslog("[ffnetdev] Device: Mute(not implemented).\n");
+   dsyslog("[ffnetdev] Device: Mute.\n");
+   
+   m_PlayMode = pmVideoOnly;
+   if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, m_Forward, m_Speed))
+      m_PlayState = psPlay;
+      
 //    cDevice::Mute();
 }
 

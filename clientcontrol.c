@@ -214,7 +214,7 @@ bool cClientControl::SendPlayState(ePlayMode PlayMode, bool bPlay, bool bForward
    
    data.pakType = ptPlayState;
    data.dataLen = sizeof(state);
-   dsyslog("dataLen %d, dataSize %d", data.dataLen, sizeof(data));
+   dsyslog("[ffnetdev] SendPlayState: PlayMode: %d, bPlay: %d, bForward: %d, iSpeed: %d", PlayMode, bPlay, bForward, iSpeed);
    if (m_Instance->m_ClientSocket->Write(&data, sizeof(data)) == sizeof(data))
    {
       if (m_Instance->m_ClientSocket->Write(&state, sizeof(state)) == sizeof(state))
@@ -263,6 +263,24 @@ bool cClientControl::SendStillPicture(const uchar *Data, int Length)
          }
       }
       
+      return true;
+   }
+   else
+      return false;
+}
+
+bool cClientControl::SendSFreeze() 
+{
+   SClientControl data;
+   int written, available, done;
+  
+   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL))
+      return false;
+  
+   data.pakType = ptFreeze;
+   data.dataLen = 0;
+   if (m_Instance->m_ClientSocket->Write(&data, sizeof(data)) == sizeof(data))
+   {     
       return true;
    }
    else

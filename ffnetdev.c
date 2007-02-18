@@ -213,7 +213,11 @@ void cPluginFFNetDev::SetPrimaryDevice()
 {	
    int i = 0;
    while ((cOsd::IsOpen() > 0) && (i-- > 0))
-   cRemote::Put(kBack);
+      cRemote::Put(kBack);
+      
+   i = 0;
+   while ((strlen(m_ClientName) == 0) && (i++ < 2))
+      sleep(1); 
    
    if ((config.iAutoSetPrimaryDVB == 1) && (m_origPrimaryDevice == -1))
    {
@@ -237,11 +241,7 @@ void cPluginFFNetDev::SetPrimaryDevice()
    if(EnableRemote) 
    {
       if (m_Remote == NULL)
-      {
-         i = 0;
-         while ((strlen(m_ClientName) == 0) && (i++ < 2))
-            sleep(1);
-            
+      {            
          char str[30];
          if (strlen(m_ClientName) > 0)
             sprintf(str, "ffnetdev-%s", m_ClientName);

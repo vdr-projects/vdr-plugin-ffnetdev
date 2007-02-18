@@ -13,7 +13,7 @@
 #include "tools/socket.h"
 #include "ffnetdev.h"
 
-enum CCPakType{ ptInfo=0, ptPlayState, ptPlayStateReq, ptStillPicture };
+enum CCPakType{ ptInfo=0, ptPlayState, ptPlayStateReq, ptStillPicture, ptFreeze };
 
 struct SClientControl
 {
@@ -72,6 +72,7 @@ public:
 	static bool SendPlayState(ePlayMode PlayMode, bool bPlay, bool bForward, int iSpeed);
 	static bool PlayStateReq(void) { return m_Instance->m_bPlayStateReq; };
 	static bool SendStillPicture(const uchar *Data, int Length);
+	static bool SendSFreeze();
 };
 
 inline bool cClientControl::Active(void) {

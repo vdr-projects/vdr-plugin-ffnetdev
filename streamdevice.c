@@ -107,7 +107,15 @@ void cStreamDevice::TrickSpeed(int Speed)
 
 void cStreamDevice::Clear(void)
 {
-   dsyslog("[ffnetdev] Device: Clear(not implemented).\n");
+   dsyslog("[ffnetdev] Device: Clear\n");
+
+// workaround for clearing in vdrviewer (speed-change resets the buffer)
+   if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, m_Forward, 1))
+      m_PlayState = psPlay;
+
+   if (!cClientControl::SendPlayState(m_PlayMode, m_Playing, m_Forward, m_Speed))
+      m_PlayState = psPlay;
+
 //    cDevice::Clear();
 }
 void cStreamDevice::Play(void)

@@ -202,7 +202,7 @@ bool cClientControl::SendPlayState(ePlayMode PlayMode, bool bPlay, bool bForward
    SClientControl data;
    SClientControlPlayState state;
        
-   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL))
+   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL) || (!m_Instance->m_bHaveClient))
       return false;
 
    m_Instance->m_bPlayStateReq = false;
@@ -232,7 +232,7 @@ bool cClientControl::SendStillPicture(const uchar *Data, int Length)
    SClientControl data;
    int written, available, done;
   
-   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL))
+   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL) || (!m_Instance->m_bHaveClient))
       return false;
   
    data.pakType = ptStillPicture;
@@ -274,7 +274,7 @@ bool cClientControl::SendSFreeze()
    SClientControl data;
    int written, available, done;
   
-   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL))
+   if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL) || (!m_Instance->m_bHaveClient))
       return false;
   
    data.pakType = ptFreeze;

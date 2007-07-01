@@ -291,7 +291,9 @@ void cPES2PESRemux::Action(void)
       
       
          // check for valid stream id type: is it video or audio or unknown?
-         if (data[3]>=0x00)
+         if ( ((data[3]>=0xC0) && (data[3]<=0xDF)) || 
+              (data[3] == 0xBD) || 
+              ((data[3]>=0xE0) && (data[3]<=0xEF)))
          {
             while (m_OutputBuffer->Free() < (int)packetlen) 
             {	

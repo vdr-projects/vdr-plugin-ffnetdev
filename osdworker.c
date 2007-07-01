@@ -223,7 +223,7 @@ bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
 	    return false;
 	}
    
-	rfbFramebufferUpdateMsg fu;
+	
 	struct timeval curtime;
 	gettimeofday(&curtime, 0);
 	curtime.tv_sec = curtime.tv_sec - (((int)curtime.tv_sec / 1000000) * 1000000);
@@ -246,16 +246,20 @@ bool cOSDWorker::SendScreen(int x1, int y1, int x2, int y2)
 	    const tColor *OSDColors = (tColor*)m_Instance->m_pOsdBitmap->Colors(numOSDColors);
 	    cOSDWorker::SendCMAP(numOSDColors, OSDColors);
 	}
+		
+	int BufferSize = m_Instance->m_pEncoder->RequiredBuffSize(x2-x1+1, y2-y1+1) + sizeof(rfbFramebufferUpdateMsg);
+	m_Instance->CreateSendBuffer(BufferSize);
 	
+	rfbFramebufferUpdateMsg *fu = (rfbFramebufferUpdateMsg*)m_Instance->m_pSendBuffer;
 	RECT rect = {x1, y1, x2, y2};
-   	fu.type=rfbFramebufferUpdate;
-   	fu.nRects=Swap16IfLE(1);
-   	OSDWrite((unsigned char*)&fu, sz_rfbFramebufferUpdateMsg);
-	//int BufferSize = m_Instance->m_pEncoder->RequiredBuffSize(x2-x1, y2-y1);
-	//m_Instance->CreateSendBuffer(BufferSize);
+   	fu->type=rfbFramebufferUpdate;
+	fu->pad=0;
+   	fu->nRects=Swap16IfLE(1);
+	
 	if (m_Instance->m_pEncoder != NULL)
 	{
-	    int BufferSize = m_Instance->m_pEncoder->EncodeRect((BYTE*)(m_Instance->m_pOsdBitmap->Data(0, 0)), m_Instance->m_pSendBuffer, rect);
+	    BufferSize = m_Instance->m_pEncoder->EncodeRect((BYTE*)(m_Instance->m_pOsdBitmap->Data(0, 0)), &(m_Instance->m_pSendBuffer[sizeof(rfbFramebufferUpdateMsg)]), rect); 
+	    BufferSize += sizeof(rfbFramebufferUpdateMsg);
 #ifdef DEBUG
 	    fprintf(stderr, "[ffnetdev] VNC: Send OSD Data %d/%d/%d/%d x1/y1/x2/y2 %d Bytes\n", x1, y1, x2, y2, BufferSize);
 #endif

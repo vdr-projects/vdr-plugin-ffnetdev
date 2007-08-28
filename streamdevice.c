@@ -24,9 +24,12 @@ cStreamDevice::cStreamDevice(void)
 
 cStreamDevice::~cStreamDevice(void)
 {
-   dsyslog("[ffnetdev] Device: Destructor cStreamDevice \n");
-   m_PlayState = psPlay;
-   DELETENULL(m_Remux);
+  dsyslog("[ffnetdev] Device: Destructor cStreamDevice \n");
+  m_PlayState = psPlay;
+  cOSDWorker::Exit();
+  cTSWorker::Exit();
+  cClientControl::Exit();
+  DELETENULL(m_Remux);
 }
 
 

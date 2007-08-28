@@ -21,6 +21,7 @@ cNetOSD::~cNetOSD()
 #ifdef DEBUG
    fprintf(stderr,"[ffnetdev] NetOSD: Destructor cNetOSD.\n");
 #endif
+   dsyslog("[ffnetdev] Destructor cNetOSD\n");
    
    cOSDWorker::ClearScreen();    
 }

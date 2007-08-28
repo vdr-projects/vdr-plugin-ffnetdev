@@ -30,6 +30,8 @@ cClientControl::cClientControl(void)
 
 cClientControl::~cClientControl() 
 {
+	dsyslog("[ffnetdev] Destructor cClientControl\n");
+
 	if (m_Active) 
 	   Stop();
 	delete m_ClientSocket;

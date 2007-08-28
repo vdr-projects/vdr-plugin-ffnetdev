@@ -68,6 +68,8 @@ cPluginFFNetDev::cPluginFFNetDev(void)
 
 cPluginFFNetDev::~cPluginFFNetDev()
 {
+  dsyslog("[ffnetdev] Destructor cPluginFFNetDev\n");
+
   cOSDWorker::Exit();
   cTSWorker::Exit();
   cClientControl::Exit();

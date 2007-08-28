@@ -23,6 +23,7 @@ cPESRemux::cPESRemux(int inputBufferSize):
 
 cPESRemux::~cPESRemux()
 {
+   InputMutex.Unlock();
    delete m_InputBuffer;
 }
 
@@ -39,7 +40,8 @@ int cPESRemux::Put(const uchar *Data, int Count)
 cPES2TSRemux::cPES2TSRemux(int VPid, int APid): cPESRemux(INPUTBUFSIZE),
     cThread("[ffnetdev] PES2TS remux"),
     m_OutputBuffer(new cRingBufferLinear(OUTPUTBUFSIZE, TS_SIZE * 2)),
-    m_Active(false)
+    m_Active(false),
+    m_Ended(false)
 {
   vpid = VPid;
   apid = APid;
@@ -48,7 +50,10 @@ cPES2TSRemux::cPES2TSRemux(int VPid, int APid): cPESRemux(INPUTBUFSIZE),
 
 cPES2TSRemux::~cPES2TSRemux()
 {
+  dsyslog("[ffnetdev] Destructor cPES2TSRemux\n");
   m_Active = false;
+  while (!m_Ended)
+    cCondWait::SleepMs(10);
   delete m_OutputBuffer;
 }
 
@@ -67,6 +72,7 @@ void cPES2TSRemux::Action(void)
 
   
   m_Active = true;
+  m_Ended = false;
   while (m_Active) {
     int count=0;
 //    fprintf(stderr, "[ffnetdev] Remuxer: Inputbuffersize: %d, Outputbuffersize: %d\n", 
@@ -168,7 +174,7 @@ void cPES2TSRemux::Action(void)
     {	
       if (!m_Active)
          continue;
-   	cCondWait::SleepMs(10);
+      cCondWait::SleepMs(10);
    	//dsyslog("[ffnetdev] Remuxer: sleep %d %d\n", m_OutputBuffer->Free(), tspacketlen);
     }
 
@@ -207,7 +213,7 @@ void cPES2TSRemux::Action(void)
     UnlockOutput();
 	
   }
-  m_Active = false;
+  m_Ended = true;
 }
 
 
@@ -215,7 +221,8 @@ void cPES2TSRemux::Action(void)
 cPES2PESRemux::cPES2PESRemux(): cPESRemux(INPUTBUFSIZE),
     cThread("[ffnetdev] PES2PES remux"),
     m_OutputBuffer(new cRingBufferLinear(OUTPUTBUFSIZE, IPACKS)),
-    m_Active(false)
+    m_Active(false),
+    m_Ended(false)
 {
    m_OutputBuffer->SetTimeouts(0, 1000);
    Start();
@@ -223,7 +230,10 @@ cPES2PESRemux::cPES2PESRemux(): cPESRemux(INPUTBUFSIZE),
 
 cPES2PESRemux::~cPES2PESRemux()
 {
+  dsyslog("[ffnetdev] Destructor cPES2PESRemux\n");
   m_Active = false;
+  while (!m_Ended)
+    cCondWait::SleepMs(10);
   delete m_OutputBuffer;
 }
 
@@ -233,7 +243,7 @@ void cPES2PESRemux::Action(void)
    unsigned int minNeededPacketlen = 10; // needed for read packet len: 6 Should be enought ... but makes no sense
    
    m_Active = true;
-   
+   m_Ended = false;
    while (m_Active) 
    {
       int count=0;
@@ -298,7 +308,7 @@ void cPES2PESRemux::Action(void)
             while (m_OutputBuffer->Free() < (int)packetlen) 
             {	
                if (!m_Active)
-               continue;
+                 continue;
                cCondWait::SleepMs(10);
                //dsyslog("[ffnetdev] Remuxer: sleep %d %d\n", m_OutputBuffer->Free(), tspacketlen);
             }
@@ -339,5 +349,5 @@ void cPES2PESRemux::Action(void)
          continue;
       } 
    }
-   m_Active = false;
+   m_Ended = true;
 }

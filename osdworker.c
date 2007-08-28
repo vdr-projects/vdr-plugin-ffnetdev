@@ -60,7 +60,10 @@ cOSDWorker::cOSDWorker(void)
 	CreateSendBuffer(720 * 576);
 }
 
-cOSDWorker::~cOSDWorker() {
+cOSDWorker::~cOSDWorker() 
+{
+	dsyslog("[ffnetdev] Destructor cOSDWorker\n");
+
 	if (m_Active) Stop();
 	
 	if (m_pEncoder != NULL) 

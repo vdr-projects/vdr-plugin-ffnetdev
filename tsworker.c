@@ -43,7 +43,9 @@ cTSWorker::cTSWorker(void)
 	origPrimaryDevice = -1;
 }
 
-cTSWorker::~cTSWorker() {
+cTSWorker::~cTSWorker() 
+{
+	dsyslog("[ffnetdev] Destructor cTSWorker\n");
 	if (m_Active) Stop();
 }
 

@@ -49,6 +49,7 @@ class cPES2TSRemux: public cPESRemux, cThread
 private:
 	cRingBufferLinear *m_OutputBuffer;
 	bool               m_Active;
+	bool               m_Ended;
 	unsigned short	   vpid;
 	unsigned short	   apid;
   
@@ -73,6 +74,7 @@ class cPES2PESRemux: public cPESRemux, cThread
 private:
 	cRingBufferLinear *m_OutputBuffer;
 	bool               m_Active;
+	bool               m_Ended;
 	
 protected:
 	virtual void Action(void);

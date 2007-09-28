@@ -7,7 +7,10 @@
 # By default the main source file also carries this name.
 #
 PLUGIN = ffnetdev
-DEBUG = 1 
+
+# Debugging on/off
+FFNETDEV_DEBUG = 1
+
 
 ### The version number of this plugin (taken from the main source file):
 
@@ -44,20 +47,25 @@ INCLUDES += -I$(VDRDIR)/include -I$(DVBDIR)/include -I.
 
 DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
+
 ### The object files (add further files here):
 
 COMMONOBJS = i18n.o \
 	\
 	tools/source.o tools/select.o tools/socket.o tools/tools.o 
-	
+
 
 SERVEROBJS = $(PLUGIN).o \
 	\
 	ffnetdev.o ffnetdevsetup.o osdworker.o tsworker.o clientcontrol.o netosd.o streamdevice.o \
 	pes2ts.o remote.o vncEncodeRRE.o vncEncodeCoRRE.o vncEncodeHexT.o \
 	vncEncoder.o translate.o \
-		
+
 ifdef DEBUG
+	FFNETDEV_DEBUG = 1
+endif
+
+ifdef FFNETDEV_DEBUG
 	DEFINES += -DDEBUG
 	CXXFLAGS += -g
 else

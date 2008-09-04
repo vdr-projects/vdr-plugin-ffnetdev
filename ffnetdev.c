@@ -33,10 +33,10 @@ cNetOSDProvider::cNetOSDProvider(void)
 	
 }
 
-cOsd * cNetOSDProvider::CreateOsd(int Left, int Top)
+cOsd * cNetOSDProvider::CreateOsd(int Left, int Top, uint Level)
 {
     
-    osd = new cNetOSD(Left, Top);
+    osd = new cNetOSD(Left, Top, Level);
     return osd;
 }
 

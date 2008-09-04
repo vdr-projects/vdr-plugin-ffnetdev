@@ -17,7 +17,7 @@ private:
 	bool truecolor;
 protected:
 public:
-    cNetOSD(int XOfs, int XOfs);
+    cNetOSD(int XOfs, int YOfs, uint Level = OSD_LEVEL_DEFAULT);
     virtual ~cNetOSD();
     virtual eOsdError CanHandleAreas(const tArea *Areas, int NumAreas);
     virtual void Flush(void);
@@ -31,7 +31,7 @@ private:
     cNetOSD **NetOSD;
 public:
     cNetOSDProvider(void);
-    virtual cOsd *CreateOsd(int Left, int Top);
+    virtual cOsd *CreateOsd(int Left, int Top, uint Level);
 };
 
 #endif //_NETOSD__H

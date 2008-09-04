@@ -27,7 +27,7 @@ bool cMyRemote::Initialize(void)
 	return true;
 }
 
-bool cMyRemote::Put(uint64 Code, bool Repeat, bool Release)
+bool cMyRemote::Put(uint64_t Code, bool Repeat, bool Release)
 {
 #if VDRVERSNUM >= 10347
     if ((cRemote::IsLearning()) && (Release))

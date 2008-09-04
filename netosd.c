@@ -9,7 +9,7 @@
 #include "osdworker.h"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-cNetOSD::cNetOSD(int Left, int Top) : cOsd(Left, Top)
+cNetOSD::cNetOSD(int XOfs, int YOfs, uint Level) : cOsd(XOfs, YOfs, Level)
 {
 #ifdef DEBUG   
    fprintf(stderr,"[ffnetdev] NetOSD: Constructor cNetOSD.\n");

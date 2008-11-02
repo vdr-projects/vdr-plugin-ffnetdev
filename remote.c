@@ -62,12 +62,11 @@ void cLearningThread::Action(void)
     {	
 	dsyslog("[ffnetdev] ClientIsReady=%d OsdIsOpen=%d SkinsIsOpen=%d", 
 	    cOSDWorker::ClientIsReady(), cOsd::IsOpen(), Skins.IsOpen());
-	delete this;
 	return;
     }
-
+#ifdef DEBUG
+    fprintf(stderr, "[ffnetdev] start learning keys");
+#endif
     dsyslog("[ffnetdev] start learning keys");
     Interface->LearnKeys();
-    
-    delete this;
 }

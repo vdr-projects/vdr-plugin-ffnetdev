@@ -15,7 +15,6 @@
 #include "netosd.h"
 #include "ffnetdev.h"
 #include "streamdevice.h"
-#include "remote.h"
 #include "osdworker.h"
 #include "clientcontrol.h"
 #include "config.h"
@@ -62,6 +61,7 @@ cPluginFFNetDev::cPluginFFNetDev(void)
   EnableRemote = false;
   m_origPrimaryDevice = -1;
   m_Remote = NULL;
+  m_LearningThread = NULL;
   
   config.iAutoSetPrimaryDVB = 0;
 }
@@ -252,9 +252,11 @@ void cPluginFFNetDev::SetPrimaryDevice()
          
          m_Remote = new cMyRemote(str);
       }
-   
+
       if (!cRemote::HasKeys())
-         new cLearningThread();
+      {
+         m_LearningThread = new cLearningThread();
+      }
       dsyslog("[ffnetdev] remote control enabled.\n");
    }
    else 
@@ -285,6 +287,12 @@ void cPluginFFNetDev::RestorePrimaryDevice()
    {
       Remotes.Del(m_Remote);
       m_Remote = NULL;
+   }
+   
+   if (m_LearningThread)
+   {
+      delete m_LearningThread;
+      m_LearningThread = NULL;
    }
 }
 

@@ -28,6 +28,7 @@ private:
 	bool EnableRemote;
 	int  m_origPrimaryDevice;	
 	char m_ClientName[20];
+	cLearningThread *m_LearningThread;
 	
 public:
   cPluginFFNetDev(void);

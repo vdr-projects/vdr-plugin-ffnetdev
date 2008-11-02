@@ -16,7 +16,11 @@
 #include "netosd.h"
 #include "ffnetdev.h"
 
+#ifdef _LP64
+typedef unsigned long u64;
+#else
 typedef unsigned long long u64;
+#endif
 
 #define TCP_SEND_SIZE (1024 * 20)
 

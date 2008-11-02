@@ -39,7 +39,11 @@ class vncEncoder;
 
 typedef unsigned char  BYTE;
 typedef unsigned int   UINT;
+#ifdef _LP64
+typedef unsigned int  DWORD;
+#else
 typedef unsigned long  DWORD;
+#endif
 
 //static
 

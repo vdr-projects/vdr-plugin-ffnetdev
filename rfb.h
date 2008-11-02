@@ -33,9 +33,10 @@
 #define RFB_H__
 
 // Define the CARD* types
-typedef unsigned long  CARD32;
-typedef unsigned short CARD16;
+typedef unsigned int  CARD32;
+typedef unsigned short int CARD16;
 typedef unsigned char  CARD8;
+    
 
 // Define the port number offsets
 #define FLASH_PORT_OFFSET 5400

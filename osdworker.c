@@ -143,7 +143,7 @@ bool cOSDWorker::SendPlayMode(ePlayMode PlayMode) {
 
 void cOSDWorker::CreateSendBuffer(int SendBufferSize)
 {
-    if (SendBufferSize != m_SendBufferSize)
+    if (SendBufferSize > m_SendBufferSize)
     {
 	if (m_pSendBuffer != NULL)
 	    delete [] m_pSendBuffer;
@@ -307,6 +307,7 @@ bool cOSDWorker::SendCMAP(int NumColors, const tColor *Colors)
 	if ((m_Instance->state==HANDSHAKE_OK) && !(m_Instance->ClientFormat.trueColour)) { 
 		dsyslog("[ffnetdev] VNC: SendColourMapEntries\n");
 		scme.type=rfbSetColourMapEntries;
+		scme.pad = 0;
 		scme.firstColour = Swap16IfLE(0);
 		scme.nColours = Swap16IfLE((CARD16)NumColors);
 

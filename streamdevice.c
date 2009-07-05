@@ -63,6 +63,7 @@ bool cStreamDevice::SetPlayMode(ePlayMode PlayMode)
    if (PlayMode == pmNone)
    {
       m_PlayState = psBufferReset;
+      m_Remux->ClearOutput();
       m_Remux->ClearInput();
       m_Remux->ClearOutput();
    }
@@ -187,6 +188,7 @@ int cStreamDevice::PlayAudio(const uchar *Data, int Length, uchar Id)
                                 (m_Remux->Fill() > TCP_SEND_SIZE * 10)))) && 
                (cTSWorker::HaveStreamClient()))
            cCondWait::SleepMs(1);
+       
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {
          dsyslog("[ffnetdev] Device: Did not put all in input buffer(audio). result:%d Length: %d Skipping Audio PES packet...\n", result, Length );
@@ -218,7 +220,8 @@ int cStreamDevice::PlayVideo(const uchar *Data, int Length)
                ((m_Playing) && ((m_Remux->InputFree() < Length) || 
                                 (m_Remux->Fill() > TCP_SEND_SIZE * 10)))) && 
                (cTSWorker::HaveStreamClient()))
-           cCondWait::SleepMs(1);
+          cCondWait::SleepMs(1);
+          
        int result=m_Remux->Put(Data, Length);
        if (result!=Length) {
          dsyslog("[ffnetdev] Device: Did not put all in input buffer(video). result:%d Length: %d Skipping Video PES packet...\n", result, Length );

@@ -92,3 +92,6 @@ Changelog
   2007-09-28: 
     - added compiling switch 'FFNETDEV_DEBUG'
     
+  2009-07-02
+    - fixed a Bug. Is now stable.
+    

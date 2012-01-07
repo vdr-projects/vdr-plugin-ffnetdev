@@ -14,7 +14,7 @@
 #define INPUTBUFSIZE	KILOBYTE(2048)
 #define OUTPUTBUFSIZE	KILOBYTE(2048)
 #define TS_SIZE         188
-#define IPACKS		2048
+#define IPACKS          65536
 
 class cPESRemux 
 {

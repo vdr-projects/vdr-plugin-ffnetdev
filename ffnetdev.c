@@ -21,7 +21,7 @@
 #include "ffnetdevsetup.h"
 
 
-const char *cPluginFFNetDev::VERSION = "0.1.0";
+const char *cPluginFFNetDev::VERSION = "0.1.2";
 const char *cPluginFFNetDev::DESCRIPTION 		= "Full Featured Network Device for Streaming";
 //const char *cOSDWorker::MAINMENUENTRY 		= "FFNetDev";
  

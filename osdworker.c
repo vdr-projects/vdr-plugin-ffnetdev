@@ -762,8 +762,8 @@ void cOSDWorker::Action(void) {
 						    break;
 						}
 						
-					 	CARD8 name[7];
-					 	strcpy((char*)&name, "VDR-OSD");
+					 	CARD8 name[8];
+					 	strncpy((char*)&name, "VDR-OSD",8);
 					 	if (!m_OSDClient->SafeWrite(&name, 7))
 						{   
 						    state = NO_CLIENT;

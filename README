@@ -6,14 +6,9 @@ some code taken from:        Sascha Volkenandt's streamdev plugin <sascha@akv-so
 			     TightVNC <http://www.tightvnc.com>
 			     
 
-Project's homepage:          https://developer.berlios.de/projects/ffnetdev/
+Project's homepage:          http://projects.vdr-developer.org/projects/plg-ffnetdev
 
 See the file COPYING for license information.
-
-!!! WARNING !!! 
-The code of this plugin is alpha quality. So expect it to have all kinds of bugs.
-If it crashes your machine, do not blame me. You have been warned!!! :-)
-!!! WARNING !!!
 
 ------------
 Description:

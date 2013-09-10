@@ -22,7 +22,7 @@
 				CONCAT2E(rfbInitColourMapSingleTable,OUTBPP)
 				
 #include <vdr/plugin.h>
-#include <osdworker.h>
+#include "osdworker.h"
 
 // THIS CODE HAS BEEN MODIFIED FROM THE ORIGINAL UNIX SOURCE
 // TO WORK FOR WINVNC.  THE PALETTE SHOULD REALLY BE RETRIEVED

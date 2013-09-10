@@ -10,7 +10,7 @@
 
 #include <vdr/tools.h>
 
-#include "i18n.h"
+//#include "i18n.h"
 #include "tsworker.h"
 #include "netosd.h"
 #include "ffnetdev.h"
@@ -21,8 +21,9 @@
 #include "ffnetdevsetup.h"
 
 
-const char *cPluginFFNetDev::VERSION = "0.1.2";
-const char *cPluginFFNetDev::DESCRIPTION 		= "Full Featured Network Device for Streaming";
+static const char *VERSION = "0.1.3";
+const char *cPluginFFNetDev::VERSION = VERSION;
+const char *cPluginFFNetDev::DESCRIPTION 		= trNOOP("Full Featured Network Device for Streaming");
 //const char *cOSDWorker::MAINMENUENTRY 		= "FFNetDev";
  
 // --- cNetOSDProvider -----------------------------------------------
@@ -163,7 +164,7 @@ bool cPluginFFNetDev::Active(void) {
 bool cPluginFFNetDev::Start(void)
 {
   // Start any background activities the plugin shall perform.
-  RegisterI18n(Phrases);
+//  RegisterI18n(Phrases);
   
   	  
   cOSDWorker::Init(OSDPort, this);

@@ -1,8 +1,8 @@
 #ifndef TOOLBOX_SOCKET_H
 #define TOOLBOX_SOCKET_H
 
-#include "tools/tools.h"
-#include "tools/source.h"
+#include "tools.h"
+#include "source.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>

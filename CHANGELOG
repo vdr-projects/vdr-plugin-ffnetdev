@@ -97,4 +97,9 @@ Changelog
 
   2012-01-06: ffnetdev-0.1.2
     - fixed two bugs: bug#741 (video freeze) and bug#742 (buffer overflow in
-      osdworker)    
+      osdworker)   
+
+  2013-09-10 ffnetdev-0.1.3
+    - completely rewrite Makefile based on VDR 2.x Plugin Makefile 
+    - Migrated to new Internalization: po/de_DE as german translation
+    - other languages still missing

@@ -174,7 +174,7 @@ void cClientControl::Action(void)
 			      case ptInfo: 
 			         if (m_ClientSocket->Read(&info, data.dataLen) == data.dataLen)
                      m_pPlugin->SetClientName(info.clientName);			         
-                  dsyslog("clientName %s, data.dataLen %d %d", info.clientName, data.dataLen, sizeof(data));
+                  dsyslog("clientName %s, data.dataLen %d %ld", info.clientName, data.dataLen, sizeof(data));
 			         break;
 			      
 			      case ptPlayStateReq: 
@@ -274,7 +274,6 @@ bool cClientControl::SendStillPicture(const uchar *Data, int Length)
 bool cClientControl::SendSFreeze() 
 {
    SClientControl data;
-   int written, available, done;
   
    if ((m_Instance == NULL) || (m_Instance->m_ClientSocket == NULL) || (!m_Instance->m_bHaveClient))
       return false;

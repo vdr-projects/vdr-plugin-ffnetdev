@@ -23,7 +23,6 @@ cTBSocket::~cTBSocket() {
 
 bool cTBSocket::OpenUDP(const std::string &Host, unsigned int Port) {
 	int socket;
-	struct sockaddr_in my_addr;
 
 	if (IsOpen()) Close();
 	
@@ -34,9 +33,6 @@ bool cTBSocket::OpenUDP(const std::string &Host, unsigned int Port) {
 	m_RemoteAddr.sin_port   = htons(Port);
 	m_RemoteAddr.sin_addr.s_addr = inet_addr(Host.c_str());
 	
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(Port);
-	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	/* limit the tx buf size to limit latency */
 #ifdef UDP_TX_BUF_SIZE
@@ -50,7 +46,13 @@ bool cTBSocket::OpenUDP(const std::string &Host, unsigned int Port) {
 	    goto closefd;*/
 		    
 	/* the bind is needed to give a port to the socket now */
-/*	if (bind(socket,(struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) 
+/*	
+	struct sockaddr_in my_addr;
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(Port);
+	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if (bind(socket,(struct sockaddr *)&my_addr, sizeof(my_addr)) < 0) 
 	    goto closefd;*/
 
 	if (!cTBSource::Open(socket))

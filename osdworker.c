@@ -652,7 +652,6 @@ void cOSDWorker::Action(void) {
 		*/
 		//fprintf(stderr, "State: %d\n",state);	
 		
-		int res;
 		switch (state) {
 		
 			case NO_CLIENT: /* Accept connecting OSD clients  */		
@@ -686,7 +685,7 @@ void cOSDWorker::Action(void) {
 
 			case CLIENT_CONNECTED: 	
 						rfbProtocolVersionMsg pvmsg;
-						res = m_OSDClient->Read(&pvmsg, sz_rfbProtocolVersionMsg);
+						m_OSDClient->Read(&pvmsg, sz_rfbProtocolVersionMsg);
 #ifdef DEBUG
 		 			        fprintf(stderr, "[ffnetdev] VNC: Client wants RFB protocol version %s\n", pvmsg);
 #endif
@@ -729,7 +728,7 @@ void cOSDWorker::Action(void) {
 						break;
 			case AUTHENTICATED:	
 						rfbClientInitMsg cimsg;
-						res = m_OSDClient->Read(&cimsg, sz_rfbClientInitMsg);
+						m_OSDClient->Read(&cimsg, sz_rfbClientInitMsg);
 #ifdef DEBUG
 						fprintf(stderr, "[ffnetdev] VNC: Client wants %s desktop(ignored).\n", 
 									cimsg.shared ? "shared":"non-shared");

@@ -245,7 +245,7 @@ void cTSWorker::ActionTCP(void) {
    						fprintf(stderr, "[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
    							rate, bytessend - oldbytessend, bufstat);
    #endif						
-   						dsyslog("[ffnetdev] Streamer: Rate %2.3f MBit/Sec, %d Bytes send, %d%% Buffer used\n",
+   						dsyslog("[ffnetdev] Streamer: Rate %2.3f MBit/Sec, %ld Bytes send, %d%% Buffer used\n",
    							rate, bytessend - oldbytessend, bufstat);
    						
    						oldbytessend = bytessend;
@@ -286,8 +286,6 @@ void cTSWorker::ActionUDP(void)
 	long bytessend = 0;
 	long oldbytessend = 0;
 	long toSend = 0;
-	int restData = 0;
-	TSData tsData;
 
 	const char* StreamIp = "192.168.0.61";
 	uint StreamPort = TSPort;
@@ -304,9 +302,6 @@ void cTSWorker::ActionUDP(void)
 	    isyslog("[ffnetdev] Streamer: UDP-Socket create successful");
 
 	gettimeofday(&oldtime, 0);
-	tsData.packNr = 0;
-	tsData.packsCount = 0;
-	tsData.tsHeaderCRC = 0;
 
 	while (m_Active) 
 	{
@@ -350,11 +345,11 @@ void cTSWorker::ActionUDP(void)
 				int available = count;
 				int done      = 0;
 				int written   = 0;
-				char data[100];
-				int  rcvCount;
 				int sleepTime;
 
-			/*	rcvCount=m_StreamClient.Read(data, 10);
+			/*	char data[100];
+				int  rcvCount;
+				rcvCount=m_StreamClient.Read(data, 10);
 				if (rcvCount > 0)
 				{
 					isyslog("[ffnetdev] Streamer: empfangen:%d Bytes\n", rcvCount);
@@ -421,7 +416,7 @@ void cTSWorker::ActionUDP(void)
 					fprintf(stderr, "[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send\n",
 						rate, bytessend - oldbytessend);
 #endif						
-					dsyslog("[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %d Bytes send\n",
+					dsyslog("[ffnetdev] Streamer: current TransferRate %2.3f MBit/Sec, %ld Bytes send\n",
 						rate, bytessend - oldbytessend);
 					
 					oldbytessend = bytessend;

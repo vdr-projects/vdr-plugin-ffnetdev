@@ -119,7 +119,7 @@ subrectEncode##bpp(															\
     rfbRectangle subrect;													\
     int x,y;																\
     int i,j;																\
-    int hx,hy,vx,vy;														\
+    int hx=0,hy,vx=0,vy;														\
     int hyflag;																\
     CARD##bpp *seg;															\
     CARD##bpp *line;														\
@@ -145,7 +145,7 @@ subrectEncode##bpp(															\
             seg = data+(j*w);												\
             if (seg[x] != cl) {break;}										\
             i = x;															\
-            while ((i < w) && (seg[i] == cl)) i += 1;						\
+            while ((seg[i] == cl) && (i < w)) i += 1;						\
             i -= 1;															\
             if (j == y) vx = hx = i;										\
             if (i < vx) vx = i;												\

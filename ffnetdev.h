@@ -17,8 +17,8 @@
 
 class cPluginFFNetDev : public cPlugin {
 private:
-	static const char *DESCRIPTION;
-	static const char *VERSION;
+//	static const char *DESCRIPTION;
+//	static const char *VERSION;
 	//static const char *MAINMENUENTRY;
 	cStreamDevice *m_StreamDevice;
 	cMyRemote *m_Remote;

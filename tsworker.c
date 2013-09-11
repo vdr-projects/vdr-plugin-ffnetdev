@@ -9,8 +9,8 @@
 
 #include <vdr/tools.h>
 
-#include "tools/socket.h"
-#include "tools/select.h"
+#include "tool_socket.h"
+#include "tool_select.h"
 
 #include "tsworker.h"
 #include "config.h"

@@ -10,8 +10,8 @@
 
 #include <vdr/thread.h>
 
-#include "tools/socket.h"
-#include "tools/select.h"
+#include "tool_socket.h"
+#include "tool_select.h"
 #include "streamdevice.h"
 #include "remote.h"
 #include "netosd.h"

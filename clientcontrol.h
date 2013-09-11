@@ -10,7 +10,7 @@
 
 #include <vdr/thread.h>
 
-#include "tools/socket.h"
+#include "tool_socket.h"
 #include "ffnetdev.h"
 
 enum CCPakType{ ptInfo=0, ptPlayState, ptPlayStateReq, ptStillPicture, ptFreeze };

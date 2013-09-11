@@ -9,7 +9,7 @@
 #define _NETOSD__H
 
 #include <vdr/osd.h>
-#include "tools/socket.h"
+#include "tool_socket.h"
 
 // --- cNetOSD -----------------------------------------------
 class cNetOSD : public cOsd {

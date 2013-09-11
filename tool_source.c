@@ -1,5 +1,5 @@
-#include "tools/source.h"
-#include "tools/select.h"
+#include "tool_source.h"
+#include "tool_select.h"
 
 #include <vdr/tools.h>
 #include <string.h>

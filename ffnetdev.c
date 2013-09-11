@@ -21,9 +21,8 @@
 #include "ffnetdevsetup.h"
 
 
-static const char *VERSION = "0.1.3";
-const char *cPluginFFNetDev::VERSION = VERSION;
-const char *cPluginFFNetDev::DESCRIPTION 		= trNOOP("Full Featured Network Device for Streaming");
+static const char *VERSION     = "0.1.3";
+static const char *DESCRIPTION = trNOOP("Full Featured Network Device for Streaming");
 //const char *cOSDWorker::MAINMENUENTRY 		= "FFNetDev";
  
 // --- cNetOSDProvider -----------------------------------------------
@@ -44,7 +43,7 @@ cOsd * cNetOSDProvider::CreateOsd(int Left, int Top, uint Level)
 // --- cPluginFFNetDev ----------------------------------------------------------
 
 const char *cPluginFFNetDev::Version(void) {
-		return tr(VERSION);
+		return VERSION;
 }
 
 const char *cPluginFFNetDev::Description(void) {

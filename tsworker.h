@@ -10,7 +10,7 @@
 
 #include <vdr/thread.h>
 
-#include "tools/socket.h"
+#include "tool_socket.h"
 #include "streamdevice.h"
 #include "remote.h"
 #include "netosd.h"
